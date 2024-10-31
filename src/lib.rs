@@ -1,6 +1,7 @@
 mod common;
 use common::{FruData, Chassis, Board, Product};
 use config::ConfigError;
+use core::panic;
 use std::{collections::HashMap, path::PathBuf};
 use anyhow::{Context, Result};
 use config::{Config, File, FileFormat};
@@ -223,11 +224,19 @@ fn build_chassis_area(fru_data: &FruData) -> Vec<u8>{
 
     // Chassis Part Number
     chassis_area.push(0xC0 | fru_data.chassis.chassis_part_number.len() as u8);         // Chassis Part Number length
+    if fru_data.chassis.chassis_part_number.len() > 0x3F {
+        panic!("Error: String length of Chassis Part Number exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.chassis.chassis_part_number.len());
+    }
     chassis_area.extend_from_slice(&fru_data.chassis.chassis_part_number.as_bytes());   // Chassis Part Number data
 
+    
     // Chassis Serial Number
     chassis_area.push(0xC0 | fru_data.chassis.chassis_serial_number.len() as u8);       // Chassis Serial Number length
+    if fru_data.chassis.chassis_serial_number.len() > 0x3F {
+        panic!("Error: String length of Chassis Serial Number exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.chassis.chassis_serial_number.len());
+    }
     chassis_area.extend_from_slice(&fru_data.chassis.chassis_serial_number.as_bytes()); // Chassis Serial Number data
+
 
     // End of Chassis area, 0xC1 as end Byte
     chassis_area.push(0xC1);
@@ -265,18 +274,37 @@ fn build_board_area(fru_data: &FruData) -> Vec<u8> {
 
 
     board_area.push(0xC0 | fru_data.board.board_manufacturer.len() as u8);
+    if fru_data.board.board_manufacturer.len() > 0x3F {
+        panic!("Error: String length of Board Manufacturer exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.board.board_manufacturer.len());
+    }
     board_area.extend_from_slice(&fru_data.board.board_manufacturer.as_bytes());
 
+
     board_area.push(0xC0 | fru_data.board.board_product_name.len() as u8);
+    if fru_data.board.board_product_name.len() > 0x3F {
+        panic!("Error: String length of Board Product Name exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.board.board_product_name.len());
+    }
     board_area.extend_from_slice(&fru_data.board.board_product_name.as_bytes());
 
+
     board_area.push(0xC0 | fru_data.board.board_serial_number.len() as u8);
+    if fru_data.board.board_serial_number.len() > 0x3F {
+        panic!("Error: String length of Board Serial Number exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.board.board_serial_number.len());
+    }
     board_area.extend_from_slice(&fru_data.board.board_serial_number.as_bytes());
 
+
     board_area.push(0xC0 | fru_data.board.board_part_number.len() as u8);
+    if fru_data.board.board_part_number.len() > 0x3F {
+        panic!("Error: String length of Board Part Number exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.board.board_part_number.len());
+    }
     board_area.extend_from_slice(&fru_data.board.board_part_number.as_bytes());
 
+
     board_area.push(0xC0 | fru_data.board.board_fru_file_id.len() as u8);
+    if fru_data.board.board_fru_file_id.len() > 0x3F {
+        panic!("Error: String length of Board Part Number exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.board.board_fru_file_id.len());
+    }
     board_area.extend_from_slice(&fru_data.board.board_fru_file_id.as_bytes());
 
 
@@ -310,21 +338,45 @@ fn build_product_area(fru_data: &FruData) -> Vec<u8> {
 
 
     product_area.push(0xC0 | fru_data.product.product_manufacturer.len() as u8);
+    if fru_data.product.product_manufacturer.len() > 0x3F {
+        panic!("Error: String length of Product Manufacturer exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.product.product_manufacturer.len());
+    }
     product_area.extend_from_slice(&fru_data.product.product_manufacturer.as_bytes());
 
+
+    
     product_area.push(0xC0 | fru_data.product.product_product_name.len() as u8);
+    if fru_data.product.product_product_name.len() > 0x3F {
+        panic!("Error: String length of Product Name exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.product.product_product_name.len());
+    }
     product_area.extend_from_slice(&fru_data.product.product_product_name.as_bytes());
 
-    product_area.push(0xC0 | fru_data.product.product_part_number.len() as u8);
-    product_area.extend_from_slice(&fru_data.product.product_part_number.as_bytes());
 
+    product_area.push(0xC0 | fru_data.product.product_part_number.len() as u8);
+    if fru_data.product.product_part_number.len() > 0x3F {
+        panic!("Error: String length of Product Part Number exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.product.product_part_number.len());
+    }
+    product_area.extend_from_slice(&fru_data.product.product_part_number.as_bytes());
+    
+    
     product_area.push(0xC0 | fru_data.product.product_version.len() as u8);
+    if fru_data.product.product_version.len() > 0x3F {
+        panic!("Error: String length of Product Version exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.product.product_version.len());
+    }
     product_area.extend_from_slice(&fru_data.product.product_version.as_bytes());
 
-    product_area.push(0xC0 | fru_data.product.product_serial_number.len() as u8);
-    product_area.extend_from_slice(&fru_data.product.product_serial_number.as_bytes());
 
+    product_area.push(0xC0 | fru_data.product.product_serial_number.len() as u8);
+    if fru_data.product.product_serial_number.len() > 0x3F {
+        panic!("Error: String length of Product Serial Number exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.product.product_serial_number.len());
+    }
+    product_area.extend_from_slice(&fru_data.product.product_serial_number.as_bytes());
+    
+    
     product_area.push(0xC0 | fru_data.product.product_asset_tag.len() as u8);
+    if fru_data.product.product_asset_tag.len() > 0x3F {
+        panic!("Error: String length of Product Asset Tag exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.product.product_asset_tag.len());
+    }
     product_area.extend_from_slice(&fru_data.product.product_asset_tag.as_bytes());
 
     
@@ -344,55 +396,11 @@ fn build_product_area(fru_data: &FruData) -> Vec<u8> {
         *last_byte = checksum as u8;
     }
 
-
     product_area
     
 }
 
 
-pub 
-fn fru_data_to_binary(fru_data: &FruData) -> Vec<u8>{
-    let mut hex_result = Vec::new();
-    
-    hex_result.extend(encode_fru_string(&fru_data.chassis.chassis_type));
-    hex_result.extend(encode_fru_string(&fru_data.chassis.chassis_part_number));
-    hex_result.extend(encode_fru_string(&fru_data.chassis.chassis_serial_number));
-    hex_result.extend(encode_fru_string(&fru_data.board.board_manufacturer));
-    hex_result.extend(encode_fru_string(&fru_data.board.board_product_name));
-    hex_result.extend(encode_fru_string(&fru_data.board.board_serial_number));
-    hex_result.extend(encode_fru_string(&fru_data.board.board_part_number));
-    hex_result.extend(encode_fru_string(&fru_data.board.board_fru_file_id));
-    hex_result.extend(encode_fru_string(&fru_data.product.product_manufacturer));
-    hex_result.extend(encode_fru_string(&fru_data.product.product_product_name));
-    hex_result.extend(encode_fru_string(&fru_data.product.product_part_number));
-    hex_result.extend(encode_fru_string(&fru_data.product.product_version));
-    hex_result.extend(encode_fru_string(&fru_data.product.product_serial_number));
-    hex_result.extend(encode_fru_string(&fru_data.product.product_asset_tag));
-
-    hex_result
-}
-
-
-
-pub
-fn encode_fru_string(s: &str) -> Vec<u8> {
-    let mut data = Vec::new();
-    let len = s.len();
-
-    if len == 0 {
-        data.push(0x00);
-        return data;
-    }
-
-    if len > 0x3F {
-        panic!("String exceed limitation. (0x3F)");
-    }
-
-    let type_length = 0xC0 | (len as u8 &0x3F);
-    data.push(type_length);
-    data.extend_from_slice(s.as_bytes());
-    data
-}
 
 
 pub
@@ -402,11 +410,3 @@ fn write_encoded_data_to_bin_file(binary_data: &Vec<u8>, file: &str) -> io::Resu
     Ok(())
 }
 
-
-pub
-fn
-show_banner() {
-    println!("");
-    println!("    fru_gen utility v0.10");
-    println!("");
-}
