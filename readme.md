@@ -3,9 +3,9 @@
 This is a simple tool written in Rust that generates a FRU (Field Replaceable Unit) file compatible with `ipmitool`. The tool automatically builds the Common Header, Chassis Info Area, Board Info Area, and Product Info Area of the FRU file, ensuring each area’s checksum is correctly calculated.
 
 ## Project Information
-- Version   : v0.10
-- Author    : GY.Wang
-- Date      : October 29, 2024
+- Version   : v0.10-release
+- Author    : Guanyan Wang
+- Date      : October 31, 2024
 
 ## License
 
