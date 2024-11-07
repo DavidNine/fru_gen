@@ -62,8 +62,6 @@ EXAMPLE:
         fru_gen -o test.bin -r cs_fru.toml
         fru_gen --output-file test.bin --read-config cs_fru.toml
 ")]
-
-
 struct ToolArgument {
 
     #[doc = r"Specify output file name (default = 'fru_gen.bin')"]
@@ -153,9 +151,7 @@ fn main() -> Result<()> {
 
 
     if !config_path_buf.exists() {
-        if args.debug {
-            eprintln!("Warning: default config file: {} could not be found, Creating default config file.", config_path);
-        }
+        eprintln!("Warning: default config file: {} could not be found, Creating default config file.", config_path);
         build_config_template("fru_gen.toml")
             .unwrap_or_else(|e| panic!("Error: Failed to builld config template, reason: '{}'", e));
         println!("Build config file 'fru_gen.toml' done.");
@@ -165,104 +161,15 @@ fn main() -> Result<()> {
     let fru_str = load_fru_data(config_path)
         .unwrap_or_else(|e| panic!("Load fru data from {} failed, reason:{}", config_path, e));
     
-    if args.debug {
-        println!("Enable debug mode.");
-        println!("Reading configure file: {}", config_path);
-        show_fru_data(&fru_str);
-    }
-
     
-    
-    
-    let mut fru_data = Vec::new();
-    let common_area_setting_map = read_config_section(config_path, "common")
-        .unwrap_or_else(|e| panic!("Error: Failed to read common config section, reason: \'{}\'", e));
-
-    let default_size = 1024;
-    let fru_size = common_area_setting_map.get("file_size").and_then(|v| v.parse::<i32>().ok())
-            .unwrap_or_else(|| {
-                if args.debug {
-                    eprintln!("Warning: 'file_size' not found or invalid. Using default value: {}", default_size);
-                }
-                default_size
-            });
-
-    // Common Header
-    fru_data.push(0x01);        // FRU format version
-    fru_data.push(0x00);        // Internal area offset ( No use, set to 0 )
-    fru_data.push(0x00);        // Chassis area offset
-    fru_data.push(0x00);        // Board area offset
-    fru_data.push(0x00);        // Product area offset
-    fru_data.push(0x00);        // Multi Record area offset
-    fru_data.push(0x00);        // Pad Byte area offset
-    fru_data.push(0x00);        // Checksum
-    
-    let mut chassis_area_data = Vec::new();
-    let mut board_area_data = Vec::new();
-    let mut product_area_data = Vec::new();
-    
-    if common_area_setting_map.get("chassis_area").unwrap().to_string() == "Enabled" {
-        if args.debug {
-            println!("Building chassis area data.");
-        }
-        chassis_area_data.extend(build_chassis_area(&fru_str));
-        fru_data.extend(&chassis_area_data);
-        if fru_data[1] == 0 {
-            fru_data[2] = 0x01;
-        }
-    }
-    
-    if common_area_setting_map.get("board_area").unwrap().to_string() == "Enabled" {
-        if args.debug {
-            println!("Building board area data.");
-        }
-        board_area_data.extend(build_board_area(&fru_str));
-        fru_data.extend(&board_area_data);
-        if fru_data[2] == 0 {
-            fru_data[3] = 0x01;
-        } else {
-            fru_data[3] = fru_data[2] as u8 + (chassis_area_data.len() / 8 + 1) as u8;  // Update board area start offset.
-
-        }
-    }
-    
-    if common_area_setting_map.get("product_area").unwrap().to_string() == "Enabled" {
-        if args.debug {
-            println!("Building product area data.");
-        }
-        product_area_data.extend(build_product_area(&fru_str));
-        fru_data.extend(&product_area_data);
-
-        if fru_data[3] == 0 {
-            fru_data[4] = 0x01;
-        } else {
-            fru_data[4] = fru_data[3] as u8 + (board_area_data.len() / 8 + 1) as u8;    // Update Product area start offset.
-        }
-    }
-    
-
-
-    // Calculate common Header checksum
-    let common_header_checksum = (0x100u16 - (fru_data.iter().take(7).map(|&b| b as u16).sum::<u16>() % 256)) % 256;
-    fru_data[7] = common_header_checksum as u8;
-    
-
-    // Check fru_data size.
-    if (fru_data.len() as i32) > fru_size {
-        panic!("Error: fru data total size exceed limitation\nExp:[{}], Act:[{}]", fru_size, fru_data.len());
-    }
-
-    // If needed, extend size of fru_data to specified bytes
-    while (fru_data.len() as i32) < fru_size {
-        fru_data.push(0x00);
-    }
+    let fru_data:Vec<u8> = process_fru_data(&fru_str, &config_path)
+        .unwrap_or_else(|e| panic!("Error: Failed to process fru data, {e}"));
 
     // Write data
     write_encoded_data_to_bin_file(&fru_data, &args.file)
         .unwrap_or_else(|e| panic!("Error: Failed to write bin file, {e}"));
     
     println!("Generate fru file: '{}'", &args.file);
-    println!("Fru Size: {}", fru_size);
     println!("Done");
     Ok(())
 }
