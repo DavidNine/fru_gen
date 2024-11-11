@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use super::fru_data::FruData;
+use super::area::Area;
 
 
 #[derive(Debug, Deserialize)]
@@ -13,10 +13,48 @@ pub struct Product {
 }
 
 
-
 impl Product {
+    pub fn new(
+        product_manufacturer: String,
+        product_product_name: String,
+        product_part_number: String,
+        product_version: String,
+        product_serial_number: String,
+        product_asset_tag: String,
+    ) -> Self {
+        Product {
+            product_manufacturer,
+            product_product_name,
+            product_part_number,
+            product_version,
+            product_serial_number,
+            product_asset_tag,
+        }
+    }
+}
 
-    pub fn build(fru_data: &FruData) -> Vec<u8> {
+impl Area for Product {
+
+    fn check_area_length(&self, field_name: &str, field_value: &str) {
+        if field_value.len() > 0x3F {
+            panic!("Error: String length of {} exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", field_name, field_value.len());
+        }
+    }
+
+    fn validate(&self) {
+        self.check_area_length("Product Manufacturer" ,&self.product_manufacturer);
+        self.check_area_length("Product Name exceed" ,&self.product_product_name);
+        self.check_area_length("Product Part Number" ,&self.product_part_number);
+        self.check_area_length("Product Version exceed" ,&self.product_version);
+        self.check_area_length("Product Serial Number" ,&self.product_serial_number);
+        self.check_area_length("Product Asset Tag" ,&self.product_asset_tag);
+    }
+
+
+
+    fn transfer_as_byte(&self) -> Vec<u8> {
+    
+        self.validate();
         let mut product_area = Vec::new();
         
         // Product Area Header
@@ -24,47 +62,28 @@ impl Product {
         product_area.push(0x00);  // Area lenght
         
         
-        product_area.push(0xC0 | fru_data.product.product_manufacturer.len() as u8);
-        if fru_data.product.product_manufacturer.len() > 0x3F {
-            panic!("Error: String length of Product Manufacturer exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.product.product_manufacturer.len());
-        }
-        product_area.extend_from_slice(&fru_data.product.product_manufacturer.as_bytes());
+        product_area.push(0xC0 | self.product_manufacturer.len() as u8);
+        product_area.extend_from_slice(self.product_manufacturer.as_bytes());
         
         
+        product_area.push(0xC0 | self.product_product_name.len() as u8);
+        product_area.extend_from_slice(self.product_product_name.as_bytes());
         
-        product_area.push(0xC0 | fru_data.product.product_product_name.len() as u8);
-        if fru_data.product.product_product_name.len() > 0x3F {
-            panic!("Error: String length of Product Name exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.product.product_product_name.len());
-        }
-        product_area.extend_from_slice(&fru_data.product.product_product_name.as_bytes());
-        
-        
-        product_area.push(0xC0 | fru_data.product.product_part_number.len() as u8);
-        if fru_data.product.product_part_number.len() > 0x3F {
-            panic!("Error: String length of Product Part Number exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.product.product_part_number.len());
-        }
-        product_area.extend_from_slice(&fru_data.product.product_part_number.as_bytes());
+
+        product_area.push(0xC0 | self.product_part_number.len() as u8);
+        product_area.extend_from_slice(self.product_part_number.as_bytes());
         
         
-        product_area.push(0xC0 | fru_data.product.product_version.len() as u8);
-        if fru_data.product.product_version.len() > 0x3F {
-            panic!("Error: String length of Product Version exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.product.product_version.len());
-        }
-        product_area.extend_from_slice(&fru_data.product.product_version.as_bytes());
+        product_area.push(0xC0 | self.product_version.len() as u8);
+        product_area.extend_from_slice(self.product_version.as_bytes());
         
         
-        product_area.push(0xC0 | fru_data.product.product_serial_number.len() as u8);
-        if fru_data.product.product_serial_number.len() > 0x3F {
-            panic!("Error: String length of Product Serial Number exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.product.product_serial_number.len());
-        }
-        product_area.extend_from_slice(&fru_data.product.product_serial_number.as_bytes());
+        product_area.push(0xC0 | self.product_serial_number.len() as u8);
+        product_area.extend_from_slice(self.product_serial_number.as_bytes());
         
         
-        product_area.push(0xC0 | fru_data.product.product_asset_tag.len() as u8);
-        if fru_data.product.product_asset_tag.len() > 0x3F {
-            panic!("Error: String length of Product Asset Tag exceed limitation\nExp:[0x3F], Act:[0x{:02X}]", fru_data.product.product_asset_tag.len());
-        }
-        product_area.extend_from_slice(&fru_data.product.product_asset_tag.as_bytes());
+        product_area.push(0xC0 | self.product_asset_tag.len() as u8);
+        product_area.extend_from_slice(self.product_asset_tag.as_bytes());
         
         
         product_area.push(0xC1);
