@@ -9,7 +9,7 @@ This is a simple tool written in Rust that generates a FRU (Field Replaceable Un
 
 1. Modularize all areas to improve overall maintainability and consistency.
 2. Add a new area: "Internal Use Area" and improve the judgment logic in certain areas.
-
+3. Add extra field to all area.
 
 
 ## License
