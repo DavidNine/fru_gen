@@ -93,7 +93,7 @@ fn build_config_template(filename: &str) -> Result<()>{
 [common]
 file_size = 256
 
-internal_area = "Disabled"
+internal_area = "Enabled"
 chassis_area = "Enabled"
 board_area = "Enabled"
 product_area = "Enabled"
@@ -103,6 +103,7 @@ product_area = "Enabled"
 type = "Rack Mount Chassis"
 part_number = "CHS1234"
 serial_number = "SN5678"
+extra = "Chassis extra"
 
 [board]
 manufacturer = "qwfqwfg"
@@ -110,6 +111,7 @@ product_name = "Board124"
 serial_number = "SN12345"
 part_number = "BP9876"
 fru_file_id = "FRU123"
+extra = "Board extra"
 
 [product]
 manufacturer = "ProductMFC"
@@ -118,6 +120,8 @@ part_number = "PN5678"
 version = "V1.0.0"
 serial_number = "SN123456"
 asset_tag = "AssetTag"
+extra = "Product extra"
+
 "#;
 
     file.write_all(default_content.as_bytes())?;
@@ -162,6 +166,7 @@ fn process_fru_data(config_path: &str, debug: bool) -> Result<Vec<u8>> {
         chassis_map.get("type").unwrap().to_string(),
         chassis_map.get("part_number").unwrap().to_string(),
         chassis_map.get("serial_number").unwrap().to_string(),
+        chassis_map.get("extra").unwrap().to_string(),
     );
     
     let board = Board::new(
@@ -170,6 +175,7 @@ fn process_fru_data(config_path: &str, debug: bool) -> Result<Vec<u8>> {
         board_map.get("serial_number").unwrap().to_string(),
         board_map.get("part_number").unwrap().to_string(),
         board_map.get("fru_file_id").unwrap().to_string(),
+        board_map.get("extra").unwrap().to_string(),
     );
 
     let product = Product::new(
@@ -179,6 +185,7 @@ fn process_fru_data(config_path: &str, debug: bool) -> Result<Vec<u8>> {
         product_map.get("version").unwrap().to_string(),
         product_map.get("serial_number").unwrap().to_string(),
         product_map.get("asset_tag").unwrap().to_string(),
+        product_map.get("extra").unwrap().to_string(),
     );
     
     let internal_area_data = internal.transfer_as_byte();
