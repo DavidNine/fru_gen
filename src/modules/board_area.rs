@@ -11,6 +11,7 @@ pub struct Board {
     pub board_serial_number: String,
     pub board_part_number: String,
     pub board_fru_file_id: String,
+    pub board_extra: String,
 }
 
 impl Board {
@@ -20,6 +21,7 @@ impl Board {
         board_serial_number: String,
         board_part_number: String,
         board_fru_file_id: String,
+        board_extra: String,
     ) -> Self {
         Board {
             board_manufacturer,
@@ -27,6 +29,7 @@ impl Board {
             board_serial_number,
             board_part_number,
             board_fru_file_id,
+            board_extra,
         }
     }
 }
@@ -45,6 +48,7 @@ impl Area for Board{
         self.check_area_length("Board Serial Number",&self.board_serial_number);
         self.check_area_length("Board Part Number"  ,&self.board_part_number);
         self.check_area_length("Board Part Number"  ,&self.board_fru_file_id);
+        self.check_area_length("Board Extra"        ,&self.board_extra);
     }
 
     fn transfer_as_byte(&self) -> Vec<u8> {
@@ -80,7 +84,11 @@ impl Area for Board{
         board_area.push(0xC0 | self.board_fru_file_id.len() as u8);
         board_area.extend_from_slice(self.board_fru_file_id.as_bytes());
         
+
+        board_area.push(0xC0 | self.board_extra.len() as u8);
+        board_area.extend_from_slice(self.board_extra.as_bytes());
         
+
         board_area.push(0xC1);
         
         // fill up the rest area space with 8 Byte

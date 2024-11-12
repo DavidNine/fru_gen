@@ -10,6 +10,7 @@ pub struct Product {
     pub product_version: String,
     pub product_serial_number: String,
     pub product_asset_tag: String,   
+    pub product_extra: String
 }
 
 
@@ -21,6 +22,7 @@ impl Product {
         product_version: String,
         product_serial_number: String,
         product_asset_tag: String,
+        product_extra: String,
     ) -> Self {
         Product {
             product_manufacturer,
@@ -29,6 +31,7 @@ impl Product {
             product_version,
             product_serial_number,
             product_asset_tag,
+            product_extra,
         }
     }
 }
@@ -48,6 +51,7 @@ impl Area for Product {
         self.check_area_length("Product Version exceed" ,&self.product_version);
         self.check_area_length("Product Serial Number" ,&self.product_serial_number);
         self.check_area_length("Product Asset Tag" ,&self.product_asset_tag);
+        self.check_area_length("Product Extra" ,&self.product_extra);
     }
 
 
@@ -85,7 +89,11 @@ impl Area for Product {
         product_area.push(0xC0 | self.product_asset_tag.len() as u8);
         product_area.extend_from_slice(self.product_asset_tag.as_bytes());
         
+
+        product_area.push(0xC0 | self.product_extra.len() as u8);
+        product_area.extend_from_slice(self.product_extra.as_bytes());
         
+
         product_area.push(0xC1);
         
         // fill up the rest area space with 8 Byte

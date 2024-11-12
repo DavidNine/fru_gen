@@ -8,15 +8,17 @@ pub struct Chassis {
     pub chassis_type: String,
     pub chassis_part_number: String,
     pub chassis_serial_number:String,
+    pub chassis_extra:String,
 }
 
 
 impl Chassis {
-    pub fn new(chassis_type: String, chassis_part_number: String, chassis_serial_number: String) -> Self {
+    pub fn new(chassis_type: String, chassis_part_number: String, chassis_serial_number: String, chassis_extra:String) -> Self {
         Chassis {
             chassis_type,
             chassis_part_number,
             chassis_serial_number,
+            chassis_extra,
         }
     }
 }
@@ -33,6 +35,7 @@ impl Area for Chassis {
     fn validate(&self) {
         self.check_area_length("Chassis Part Number" ,&self.chassis_part_number);
         self.check_area_length("Chassis Serial Number" ,&self.chassis_serial_number);
+        self.check_area_length("Chassis Extra" ,&self.chassis_serial_number);
     }
 
     fn transfer_as_byte(&self) -> Vec<u8> {
@@ -53,14 +56,18 @@ impl Area for Chassis {
         
         // Chassis Part Number
         chassis_area.push(0xC0 | self.chassis_part_number.len() as u8);         // Chassis Part Number length
-        chassis_area.extend_from_slice(self.chassis_part_number.as_bytes());   // Chassis Part Number data
+        chassis_area.extend_from_slice(self.chassis_part_number.as_bytes());    // Chassis Part Number data
         
         
         // Chassis Serial Number
         chassis_area.push(0xC0 | self.chassis_serial_number.len() as u8);       // Chassis Serial Number length
-        chassis_area.extend_from_slice(self.chassis_serial_number.as_bytes()); // Chassis Serial Number data
+        chassis_area.extend_from_slice(self.chassis_serial_number.as_bytes());  // Chassis Serial Number data
         
         
+        chassis_area.push(0xC0 | self.chassis_extra.len() as u8);       // Chassis Extra Data length
+        chassis_area.extend_from_slice(self.chassis_extra.as_bytes());  // Chassis Extra Data
+        
+
         // End of Chassis area, 0xC1 as end Byte
         chassis_area.push(0xC1);
         
