@@ -32,6 +32,17 @@ impl Board {
             board_extra,
         }
     }
+
+
+    
+    pub fn print_all(&self) {
+        println!("Board Manufacturer  = {}" ,&self.board_manufacturer);
+        println!("Board Product Name  = {}" ,&self.board_product_name);
+        println!("Board Serial Number = {}" ,&self.board_serial_number);
+        println!("Board Part Number   = {}" ,&self.board_part_number);
+        println!("Board Part Number   = {}" ,&self.board_fru_file_id);
+        println!("Board Extra         = {}" ,&self.board_extra);
+    }
 }
 
 impl Area for Board{
@@ -50,6 +61,7 @@ impl Area for Board{
         self.check_area_length("Board Part Number"  ,&self.board_fru_file_id);
         self.check_area_length("Board Extra"        ,&self.board_extra);
     }
+
 
     fn transfer_as_byte(&self) -> Vec<u8> {
         

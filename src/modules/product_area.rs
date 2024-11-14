@@ -34,6 +34,15 @@ impl Product {
             product_extra,
         }
     }
+    pub fn print_all(&self) {
+        println!("Product Manufacturer   = {}" ,&self.product_manufacturer);
+        println!("Product Name exceed    = {}" ,&self.product_product_name);
+        println!("Product Part Number    = {}" ,&self.product_part_number);
+        println!("Product Version exceed = {}" ,&self.product_version);
+        println!("Product Serial Number  = {}" ,&self.product_serial_number);
+        println!("Product Asset Tag      = {}" ,&self.product_asset_tag);
+        println!("Product Extra          = {}" ,&self.product_extra);
+    }
 }
 
 impl Area for Product {
