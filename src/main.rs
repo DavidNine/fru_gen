@@ -22,8 +22,7 @@
 \***********************************************************************************/
 
 use core::panic;
-use std::io;
-use std::{fs::File, io::Write, path::PathBuf};
+use std::{io, vec};
 use clap::Parser;
 use anyhow::Result;
 use fru_gen::*;
@@ -32,6 +31,19 @@ use modules::internal_area::Internal;
 use modules::chassis_area::Chassis;
 use modules::board_area::Board;
 use modules::product_area::Product;
+
+use std::{
+    fs::File, 
+    io::Write, 
+    path::PathBuf
+};
+use crossterm::{
+    event::{self, Event, KeyCode}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}
+};
+
+use tui::{
+    backend::CrosstermBackend, style::{Color, Style}, widgets::{Block, Borders, Paragraph}, Terminal
+};
 
 
 /*
@@ -135,14 +147,8 @@ fn process_fru_data(config_path: &str, debug: bool) -> Result<Vec<u8>> {
     
     
     let mut fru_data = Vec::new();
-    let common_area_setting_map = read_config_section(config_path, "common")?;
+    let fru_size = 256;
 
-    let default_size = 1024;
-    let fru_size = common_area_setting_map.get("file_size").and_then(|v| v.parse::<i32>().ok())
-            .unwrap_or_else(|| {
-                eprintln!("Warning: 'file_size' not found or invalid. Using default value: {}", default_size);
-                default_size
-            });
 
     // Common Header
     fru_data.push(0x01);        // FRU format version
@@ -155,38 +161,37 @@ fn process_fru_data(config_path: &str, debug: bool) -> Result<Vec<u8>> {
     fru_data.push(0x00);        // Checksum
     
 
-    let chassis_map = read_config_section(config_path, "chassis")?;
-    let board_map = read_config_section(config_path, "board")?;
-    let product_map = read_config_section(config_path, "product")?;
-
+    let config_map = load_yaml(config_path)?;
 
     let internal = Internal::new("".to_string());
 
+
     let chassis = Chassis::new(
-        chassis_map.get("type").unwrap().to_string(),
-        chassis_map.get("part_number").unwrap().to_string(),
-        chassis_map.get("serial_number").unwrap().to_string(),
-        chassis_map.get("extra").unwrap().to_string(),
+        config_map.get("chassis_type").unwrap_or(&"".to_string()).to_string(),
+        config_map.get("chassis_part_number").unwrap_or(&"".to_string()).to_string(),
+        config_map.get("chassis_serial_number").unwrap_or(&"".to_string()).to_string(),
+        config_map.get("chassis_extra").unwrap_or(&"".to_string()).to_string(),
     );
     
     let board = Board::new(
-        board_map.get("manufacturer").unwrap().to_string(),
-        board_map.get("product_name").unwrap().to_string(),
-        board_map.get("serial_number").unwrap().to_string(),
-        board_map.get("part_number").unwrap().to_string(),
-        board_map.get("fru_file_id").unwrap().to_string(),
-        board_map.get("extra").unwrap().to_string(),
+        config_map.get("board_manufacturer").unwrap_or(&"".to_string()).to_string(),
+        config_map.get("board_product_Name").unwrap_or(&"".to_string()).to_string(),
+        config_map.get("board_serial_Number").unwrap_or(&"".to_string()).to_string(),
+        config_map.get("board_part_Number").unwrap_or(&"".to_string()).to_string(),
+        config_map.get("board_fruid").unwrap_or(&"".to_string()).to_string(),
+        config_map.get("board_extra").unwrap_or(&"".to_string()).to_string(),
     );
-
+    
     let product = Product::new(
-        product_map.get("manufacturer").unwrap().to_string(),
-        product_map.get("product_name").unwrap().to_string(),
-        product_map.get("part_number").unwrap().to_string(),
-        product_map.get("version").unwrap().to_string(),
-        product_map.get("serial_number").unwrap().to_string(),
-        product_map.get("asset_tag").unwrap().to_string(),
-        product_map.get("extra").unwrap().to_string(),
+        config_map.get("product_manufacturer").unwrap_or(&"".to_string()).to_string(),
+        config_map.get("product_name").unwrap_or(&"".to_string()).to_string(),
+        config_map.get("product_part_number").unwrap_or(&"".to_string()).to_string(),
+        config_map.get("product_version").unwrap_or(&"".to_string()).to_string(),
+        config_map.get("product_serial_number").unwrap_or(&"".to_string()).to_string(),
+        config_map.get("product_asset_tag").unwrap_or(&"".to_string()).to_string(),
+        config_map.get("product_extra").unwrap_or(&"".to_string()).to_string(),
     );
+    
     
     let internal_area_data = internal.transfer_as_byte();
     let chassis_area_data = chassis.transfer_as_byte();
@@ -194,55 +199,49 @@ fn process_fru_data(config_path: &str, debug: bool) -> Result<Vec<u8>> {
     let product_area_data = product.transfer_as_byte();
     
     if debug == true {
+        println!("{:#?}", config_map);
         println!("{:?}", internal_area_data);
         println!("{:?}", chassis_area_data);
         println!("{:?}", board_area_data);
         println!("{:?}", product_area_data);
     }
     
-    if common_area_setting_map.get("internal_area").unwrap().to_string() == "Enabled" {
-        fru_data.extend(&internal_area_data);
-        fru_data[1] = 0x01;
-    }
-    
-    if common_area_setting_map.get("chassis_area").unwrap().to_string() == "Enabled" {
-        fru_data.extend(&chassis_area_data);
-        if fru_data[1] == 0 {
-            fru_data[2] = 0x01;
-        } else {
-            if internal_area_data.len() % 8 == 0 {
-                fru_data[2] = fru_data[1] as u8 + (internal_area_data.len() / 8) as u8;
-            } else if internal_area_data.len() % 8 != 0 {
-                fru_data[2] = fru_data[1] as u8 + (internal_area_data.len() / 8 + 1) as u8;
-            }
+    fru_data.extend(&internal_area_data);
+    fru_data[1] = 0x01;
+
+    fru_data.extend(&chassis_area_data);
+    if fru_data[1] == 0 {
+        fru_data[2] = 0x01;
+    } else {
+        if internal_area_data.len() % 8 == 0 {
+            fru_data[2] = fru_data[1] as u8 + (internal_area_data.len() / 8) as u8;
+        } else if internal_area_data.len() % 8 != 0 {
+            fru_data[2] = fru_data[1] as u8 + (internal_area_data.len() / 8 + 1) as u8;
         }
     }
-    
-    if common_area_setting_map.get("board_area").unwrap().to_string() == "Enabled" {
-        fru_data.extend(&board_area_data);
-        if fru_data[2] == 0 {
-            fru_data[3] = 0x01;
-        } else {
-            if internal_area_data.len() % 8 == 0 {
-                fru_data[3] = fru_data[2] as u8 + (chassis_area_data.len() / 8) as u8;      // Update board area start offset.
-            } else if internal_area_data.len() % 8 != 0 {
-                fru_data[3] = fru_data[2] as u8 + (chassis_area_data.len() / 8 + 1) as u8;  // Update board area start offset.
-            }
+
+    fru_data.extend(&board_area_data);
+    if fru_data[2] == 0 {
+        fru_data[3] = 0x01;
+    } else {
+        if internal_area_data.len() % 8 == 0 {
+            fru_data[3] = fru_data[2] as u8 + (chassis_area_data.len() / 8) as u8;      // Update board area start offset.
+        } else if internal_area_data.len() % 8 != 0 {
+            fru_data[3] = fru_data[2] as u8 + (chassis_area_data.len() / 8 + 1) as u8;  // Update board area start offset.
         }
     }
-    
-    if common_area_setting_map.get("product_area").unwrap().to_string() == "Enabled" {
-        fru_data.extend(&product_area_data);
-        if fru_data[3] == 0 {
-            fru_data[4] = 0x01;
-        } else {
-            if internal_area_data.len() % 8 == 0 {
-                fru_data[4] = fru_data[3] as u8 + (board_area_data.len() / 8) as u8;    // Update Product area start offset.
-            } else if internal_area_data.len() % 8 != 0 {
-                fru_data[4] = fru_data[3] as u8 + (board_area_data.len() / 8 + 1) as u8;    // Update Product area start offset.
-            }
+
+    fru_data.extend(&product_area_data);
+    if fru_data[3] == 0 {
+        fru_data[4] = 0x01;
+    } else {
+        if internal_area_data.len() % 8 == 0 {
+            fru_data[4] = fru_data[3] as u8 + (board_area_data.len() / 8) as u8;    // Update Product area start offset.
+        } else if internal_area_data.len() % 8 != 0 {
+            fru_data[4] = fru_data[3] as u8 + (board_area_data.len() / 8 + 1) as u8;    // Update Product area start offset.
         }
     }
+
     
     // Calculate common Header checksum
     fru_data[7] = ((0x100u16 - (fru_data.iter().take(7).map(|&b| b as u16).sum::<u16>() % 256)) % 256) as u8;
@@ -271,23 +270,227 @@ fn write_encoded_data_to_bin_file(binary_data: &Vec<u8>, file: &str) -> io::Resu
     Ok(())
 }
 
-fn main() -> Result<()> {
+
+struct Line {
+    immutable: String,
+    editable: String,
+}
+
+fn save_to_file(lines: &[Line], filename: &str) -> io::Result<()>{
+    let mut file = File::create(filename)?;
+    for line in lines {
+        writeln!(file,"{}\"{}\"", line.immutable, line.editable)?;
+    }
+    
+    Ok(())    
+    
+}
+
+
+fn main() -> Result<(), io::Error> {
+    
+
+    // 初始化終端
+    enable_raw_mode()?;
+    let mut stdout = io::stdout();
+    execute!(stdout, EnterAlternateScreen)?;
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend)?;
+    
+
+
+    let mut lines = vec![
+        Line {
+            immutable: "Chassis_type: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Chassis_Part_Number: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Chassis_Serial_Number: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Chassis_Extra: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Board_Manufacturer: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Board_Product_Name: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Board_Serial_Number: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Board_Part_Number: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Board_Fruid: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Board_Extra: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Product_Manufacturer: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Product_Name: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Product_Part_Number: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Product_Version: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Product_Serial_Number: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Product_Asset_Tag: ".to_string(),
+            editable: String::new(),
+        },
+        Line {
+            immutable: "Product_Extra: ".to_string(),
+            editable: String::new(),
+        },
+
+    ];
+
+    let mut cursor_x = lines[0].immutable.len();
+    let mut cursor_y = 0;
+    let mut cursor_visible = true; // Track cursor visibility
+
+
+    // 主循環
+    loop {
+        // Toggle cursor visibility to create flashing effect
+        cursor_visible = !cursor_visible;
+
+        // Insert cursor symbol temporarily at the current position if visible
+        if cursor_visible {
+            let cursor_pos = cursor_x - lines[cursor_y].immutable.len();
+            lines[cursor_y].editable.insert(cursor_pos, '_');
+        }
+
+        terminal.draw(|f| {
+            let size = f.size();
+            let block = Block::default().title("FRU Gen editor").borders(Borders::ALL);
+            
+            let content: String = lines
+                .iter()
+                .map(|line| format!("{}{}", line.immutable, line.editable))
+                .collect::<Vec<String>>()
+                .join("\n");
+
+            let paragraph = Paragraph::new(content)
+                .style(Style::default().fg(Color::White))
+                .block(block);
+            f.render_widget(paragraph, size);
+        })?;
+
+        // Remove cursor symbol after rendering to maintain data integrity
+        if cursor_visible {
+            let cursor_pos = cursor_x - lines[cursor_y].immutable.len();
+            lines[cursor_y].editable.remove(cursor_pos);
+        }
+
+
+        // 處理鍵盤輸入
+        if event::poll(std::time::Duration::from_millis(100))? {
+            match event::read()? {
+                Event::Key(key) => match key.code {
+                    KeyCode::Char(c) => {
+
+                        let editable_pos = cursor_x - lines[cursor_y].immutable.len(); // Calculate the position once
+                        lines[cursor_y].editable.insert(editable_pos, c); // Then, perform the insertion
+                        cursor_x += 1;
+                    }
+                    KeyCode::Backspace => {
+                        if cursor_x > lines[cursor_y].immutable.len() {
+                            let editable_pos = cursor_x - lines[cursor_y].immutable.len();
+                            lines[cursor_y].editable.remove(editable_pos - 1);
+                            cursor_x -= 1;
+                        }
+                    }
+
+                    KeyCode::Enter => {
+                        if cursor_y + 1 < lines.len() {
+                            cursor_y += 1;
+                            cursor_x = lines[cursor_y].immutable.len();
+                        }
+                    }
+                    KeyCode::Up => {
+                        if cursor_y > 0 {
+                            cursor_y -= 1;
+                            cursor_x = lines[cursor_y].immutable.len() + lines[cursor_y].editable.len();
+                        }
+                    }
+                    KeyCode::Down => {
+                        if cursor_y + 1 < lines.len() {
+                            cursor_y += 1;
+                            cursor_x = lines[cursor_y].immutable.len() + lines[cursor_y].editable.len();
+                        }
+                    }
+                    KeyCode::Left => {
+                        if cursor_x > lines[cursor_y].immutable.len() {
+                            cursor_x -= 1;
+                        }
+                    }
+                    KeyCode::Right => {
+                        if cursor_x < lines[cursor_y].immutable.len() + lines[cursor_y].editable.len() {
+                            cursor_x += 1;
+                        }
+                    }
+                    KeyCode::Esc => {
+                        save_to_file(&lines, "output.yaml")?;
+                        break;
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+    }
+
+    disable_raw_mode()?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
+    terminal.show_cursor()?;
+
+    
+
+
+
     
     // Argument parser
     let args = ToolArgument::parse();
-
+    
     // Config_path
     let config_path_buf = args.path
-            .unwrap_or_else(|| {
-                PathBuf::from("fru_gen.toml")
-            });
+    .unwrap_or_else(|| {
+        PathBuf::from("output.yaml")
+    });
 
     let config_path = config_path_buf
         .as_path()
         .to_str()
         .expect("Could not convert path to a valid UTF-8 string");
 
-    
+
     // Build config process
     if let Some(config_filename) = &args.build_config {
         build_config_template(config_filename)
@@ -304,6 +507,7 @@ fn main() -> Result<()> {
         println!("Build config file 'fru_gen.toml' done.");
     }
 
+
     let fru_data = process_fru_data(config_path, args.debug)
         .unwrap_or_else(|e| panic!("Error: Failed to process fru data: {}", e));
 
@@ -314,5 +518,7 @@ fn main() -> Result<()> {
     println!("Generate fru file: '{}'", &args.file);
     println!("Done");
     Ok(())
+ 
+
 }
 
