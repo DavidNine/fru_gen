@@ -1,10 +1,8 @@
 pub mod modules;
-use std::collections::HashMap;
 use anyhow::Result;
-use config::{Config, File, FileFormat};
 use std::io::{self, Write};
-
-
+use config::{Config, File, FileFormat};
+use std::collections::HashMap;
 
 /// 
 /// Read all data under the specified section from the designated file into a HashMap.
@@ -33,6 +31,23 @@ fn read_config_section(file: &str, section: &str) -> Result<HashMap<String, Stri
     }
 }
 
+pub fn load_yaml(file: &str) -> Result<HashMap<String, String>, config::ConfigError> {
+    // Read the whole file as a HashMap with `Option<String>` values
+    let settings = Config::builder()
+        .add_source(File::new(file, FileFormat::Yaml))
+        .build()?;
+
+    // Deserialize into `HashMap<String, Option<String>>`
+    let config_map: HashMap<String, Option<String>> = settings.try_deserialize()?;
+
+    // Transform `Option<String>` values to `String`, defaulting to an empty string
+    let result = config_map
+        .into_iter()
+        .map(|(k, v)| (k, v.unwrap_or_default()))
+        .collect();
+
+    Ok(result)
+}
 
 pub
 fn write_encoded_data_to_bin_file(binary_data: &Vec<u8>, file: &str) -> io::Result<()>{
