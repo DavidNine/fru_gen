@@ -31,6 +31,7 @@ use modules::chassis_area::Chassis;
 use modules::board_area::Board;
 use modules::product_area::Product;
 use modules::fru_editor::FRUEditor;
+use tempfile::NamedTempFile;
 
 use std::{
     io::Write, 
@@ -74,7 +75,7 @@ EXAMPLE:
         fru_gen -o test.bin -r cs_fru.toml
         fru_gen --output-file test.bin --read-config cs_fru.toml
 ")]
-pub struct ToolArgument {
+struct ToolArgument {
 
     #[doc = r"Specify output file name (default = 'fru_gen.bin')"]
     #[arg(short = 'o', long = "output-file", default_value = "fru_gen.bin")]
@@ -225,39 +226,60 @@ fn write_encoded_data_to_bin_file(binary_data: &Vec<u8>, file: &str) -> io::Resu
 }
 
 
+fn dispatch_function(args: &ToolArgument) -> Result<(), io::Error> {
+    if args.user_interface_mode {
+        let fru_editor: FRUEditor = FRUEditor::new("FRU Editor".to_string());
+        fru_editor.run()?;
+        
+        let temp_file = NamedTempFile::new()?; // Keeps the temporary file alive
+        let temp_file_name = temp_file.path().to_str().unwrap_or("temp.yaml"); // Get the path as a string
+        let fru_data: Vec<u8> = process_fru_data(&temp_file_name, args.debug)
+            .unwrap_or_else(|e| panic!("Error: Failed to process fru data: {}", e));
+
+        // Write data
+        write_encoded_data_to_bin_file(&fru_data, &args.file)
+            .unwrap_or_else(|e| panic!("Error: Failed to write bin file, {e}"));
+
+    } else if args.build_config {
+         // Config_path
+         let config_path_buf = args.path.clone()
+         .unwrap_or_else(|| {
+             PathBuf::from("output.yaml")
+         });
+ 
+        build_config_template(config_path_buf);
+    }
+    else {
+        // Config_path
+        let config_path_buf = args.path.clone()
+        .unwrap_or_else(|| {
+            PathBuf::from("output.yaml")
+        });
+
+        let config_path = config_path_buf
+            .as_path()
+            .to_str()
+            .expect("Could not convert path to a valid UTF-8 string");
+
+        let fru_data: Vec<u8> = process_fru_data(config_path, args.debug)
+            .unwrap_or_else(|e| panic!("Error: Failed to process fru data: {}", e));
+
+        // Write data
+        write_encoded_data_to_bin_file(&fru_data, &args.file)
+            .unwrap_or_else(|e| panic!("Error: Failed to write bin file, {e}"));
+    }
+
+    Ok(())
+}
 
 
 fn main() -> Result<(), io::Error> {
     
     // Argument parser
-    let args = ToolArgument::parse();
-    
-    
-    let fru_editor: FRUEditor = FRUEditor::new("FRU editor".to_string());
-    if args.user_interface_mode {
-        fru_editor.run()?;
-    }
+    let args: ToolArgument = ToolArgument::parse();
 
-    
-    // Config_path
-    let config_path_buf = args.path
-    .unwrap_or_else(|| {
-        PathBuf::from("output.yaml")
-    });
+    dispatch_function(&args)?;
 
-    let config_path = config_path_buf
-        .as_path()
-        .to_str()
-        .expect("Could not convert path to a valid UTF-8 string");
-
-
-    let fru_data = process_fru_data(config_path, args.debug)
-        .unwrap_or_else(|e| panic!("Error: Failed to process fru data: {}", e));
-
-    // Write data
-    write_encoded_data_to_bin_file(&fru_data, &args.file)
-        .unwrap_or_else(|e| panic!("Error: Failed to write bin file, {e}"));
-    
     
     println!("Generate fru file: '{}'", &args.file);
     println!("Done");
