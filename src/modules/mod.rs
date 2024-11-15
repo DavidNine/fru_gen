@@ -3,3 +3,4 @@ pub mod board_area;
 pub mod product_area;
 pub mod area;
 pub mod internal_area;
+pub mod fru_editor;

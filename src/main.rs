@@ -21,46 +21,40 @@
     THE SOFTWARE.
 \***********************************************************************************/
 
-use core::panic;
-use std::{io, vec};
-use clap::Parser;
+use std::io;
 use anyhow::Result;
+use clap::Parser;
 use fru_gen::*;
-use modules::area::Area;
+use modules::{area::Area, fru_editor::UI};
 use modules::internal_area::Internal;
 use modules::chassis_area::Chassis;
 use modules::board_area::Board;
 use modules::product_area::Product;
+use modules::fru_editor::FRUEditor;
 
 use std::{
-    fs::File, 
     io::Write, 
     path::PathBuf
 };
-use crossterm::{
-    event::{self, Event, KeyCode}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}
-};
-
-use tui::{
-    backend::CrosstermBackend, style::{Color, Style}, widgets::{Block, Borders, Paragraph}, Terminal
-};
 
 
-/*
-    argument struct.
-*/
+
+
+
 #[derive(Parser, Debug)]
 #[command(
-author = "Guanyan.Wang", 
-version = 
-"utility v0.10 
+    author  = "Guanyan.Wang", 
+    version = 
+
+"utility v0.12
 Copyright (C) 2024 Guanyan Wang
     
 A utility to generate FRU files compatible with IPMI tool usage.
 
 For more information, please contact: ninebro1211@gmail.com
 ",
-about = "A utility to generate FRU files compatible with IPMI tool usage."
+
+    about = "A utility to generate FRU files compatible with IPMI tool usage."
 )]
 
 #[command(help_template = "
@@ -80,7 +74,7 @@ EXAMPLE:
         fru_gen -o test.bin -r cs_fru.toml
         fru_gen --output-file test.bin --read-config cs_fru.toml
 ")]
-struct ToolArgument {
+pub struct ToolArgument {
 
     #[doc = r"Specify output file name (default = 'fru_gen.bin')"]
     #[arg(short = 'o', long = "output-file", default_value = "fru_gen.bin")]
@@ -97,50 +91,12 @@ struct ToolArgument {
     #[doc = r"Enable debug mode"]
     #[arg(short = 'd', long = "debug")]
     debug: bool,
+
+
+    #[doc = r"Generate FRU binary file by using TUI mode"]
+    #[arg(short = 'u', long = "ui")]
+    user_interface_mode: bool
 }
-
-fn build_config_template(filename: &str) -> Result<()>{
-    let mut file = File::create(filename)?;
-    let default_content = r#"
-[common]
-file_size = 256
-
-internal_area = "Enabled"
-chassis_area = "Enabled"
-board_area = "Enabled"
-product_area = "Enabled"
-
-
-[chassis]
-type = "Rack Mount Chassis"
-part_number = "CHS1234"
-serial_number = "SN5678"
-extra = "Chassis extra"
-
-[board]
-manufacturer = "qwfqwfg"
-product_name = "Board124"
-serial_number = "SN12345"
-part_number = "BP9876"
-fru_file_id = "FRU123"
-extra = "Board extra"
-
-[product]
-manufacturer = "ProductMFC"
-product_name = "Product1"
-part_number = "PN5678"
-version = "V1.0.0"
-serial_number = "SN123456"
-asset_tag = "AssetTag"
-extra = "Product extra"
-
-"#;
-
-    file.write_all(default_content.as_bytes())?;
-    Ok(())
-}
-
-
 
 pub
 fn process_fru_data(config_path: &str, debug: bool) -> Result<Vec<u8>> {
@@ -162,9 +118,7 @@ fn process_fru_data(config_path: &str, debug: bool) -> Result<Vec<u8>> {
     
 
     let config_map = load_yaml(config_path)?;
-
     let internal = Internal::new("".to_string());
-
 
     let chassis = Chassis::new(
         config_map.get("chassis_type").unwrap_or(&"".to_string()).to_string(),
@@ -172,7 +126,7 @@ fn process_fru_data(config_path: &str, debug: bool) -> Result<Vec<u8>> {
         config_map.get("chassis_serial_number").unwrap_or(&"".to_string()).to_string(),
         config_map.get("chassis_extra").unwrap_or(&"".to_string()).to_string(),
     );
-    
+
     let board = Board::new(
         config_map.get("board_manufacturer").unwrap_or(&"".to_string()).to_string(),
         config_map.get("board_product_Name").unwrap_or(&"".to_string()).to_string(),
@@ -193,10 +147,10 @@ fn process_fru_data(config_path: &str, debug: bool) -> Result<Vec<u8>> {
     );
     
     
-    let internal_area_data = internal.transfer_as_byte();
-    let chassis_area_data = chassis.transfer_as_byte();
-    let board_area_data = board.transfer_as_byte();
-    let product_area_data = product.transfer_as_byte();
+    let internal_area_data  = internal.transfer_as_byte();
+    let chassis_area_data   = chassis.transfer_as_byte();
+    let board_area_data     = board.transfer_as_byte();
+    let product_area_data   = product.transfer_as_byte();
     
     if debug == true {
         println!("{:#?}", config_map);
@@ -271,213 +225,19 @@ fn write_encoded_data_to_bin_file(binary_data: &Vec<u8>, file: &str) -> io::Resu
 }
 
 
-struct Line {
-    immutable: String,
-    editable: String,
-}
-
-fn save_to_file(lines: &[Line], filename: &str) -> io::Result<()>{
-    let mut file = File::create(filename)?;
-    for line in lines {
-        writeln!(file,"{}\"{}\"", line.immutable, line.editable)?;
-    }
-    
-    Ok(())    
-    
-}
 
 
 fn main() -> Result<(), io::Error> {
     
-
-    // 初始化終端
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-    
-
-
-    let mut lines = vec![
-        Line {
-            immutable: "Chassis_type: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Chassis_Part_Number: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Chassis_Serial_Number: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Chassis_Extra: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Board_Manufacturer: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Board_Product_Name: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Board_Serial_Number: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Board_Part_Number: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Board_Fruid: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Board_Extra: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Product_Manufacturer: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Product_Name: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Product_Part_Number: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Product_Version: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Product_Serial_Number: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Product_Asset_Tag: ".to_string(),
-            editable: String::new(),
-        },
-        Line {
-            immutable: "Product_Extra: ".to_string(),
-            editable: String::new(),
-        },
-
-    ];
-
-    let mut cursor_x = lines[0].immutable.len();
-    let mut cursor_y = 0;
-    let mut cursor_visible = true; // Track cursor visibility
-
-
-    // 主循環
-    loop {
-        // Toggle cursor visibility to create flashing effect
-        cursor_visible = !cursor_visible;
-
-        // Insert cursor symbol temporarily at the current position if visible
-        if cursor_visible {
-            let cursor_pos = cursor_x - lines[cursor_y].immutable.len();
-            lines[cursor_y].editable.insert(cursor_pos, '_');
-        }
-
-        terminal.draw(|f| {
-            let size = f.size();
-            let block = Block::default().title("FRU Gen editor").borders(Borders::ALL);
-            
-            let content: String = lines
-                .iter()
-                .map(|line| format!("{}{}", line.immutable, line.editable))
-                .collect::<Vec<String>>()
-                .join("\n");
-
-            let paragraph = Paragraph::new(content)
-                .style(Style::default().fg(Color::White))
-                .block(block);
-            f.render_widget(paragraph, size);
-        })?;
-
-        // Remove cursor symbol after rendering to maintain data integrity
-        if cursor_visible {
-            let cursor_pos = cursor_x - lines[cursor_y].immutable.len();
-            lines[cursor_y].editable.remove(cursor_pos);
-        }
-
-
-        // 處理鍵盤輸入
-        if event::poll(std::time::Duration::from_millis(100))? {
-            match event::read()? {
-                Event::Key(key) => match key.code {
-                    KeyCode::Char(c) => {
-
-                        let editable_pos = cursor_x - lines[cursor_y].immutable.len(); // Calculate the position once
-                        lines[cursor_y].editable.insert(editable_pos, c); // Then, perform the insertion
-                        cursor_x += 1;
-                    }
-                    KeyCode::Backspace => {
-                        if cursor_x > lines[cursor_y].immutable.len() {
-                            let editable_pos = cursor_x - lines[cursor_y].immutable.len();
-                            lines[cursor_y].editable.remove(editable_pos - 1);
-                            cursor_x -= 1;
-                        }
-                    }
-
-                    KeyCode::Enter => {
-                        if cursor_y + 1 < lines.len() {
-                            cursor_y += 1;
-                            cursor_x = lines[cursor_y].immutable.len();
-                        }
-                    }
-                    KeyCode::Up => {
-                        if cursor_y > 0 {
-                            cursor_y -= 1;
-                            cursor_x = lines[cursor_y].immutable.len() + lines[cursor_y].editable.len();
-                        }
-                    }
-                    KeyCode::Down => {
-                        if cursor_y + 1 < lines.len() {
-                            cursor_y += 1;
-                            cursor_x = lines[cursor_y].immutable.len() + lines[cursor_y].editable.len();
-                        }
-                    }
-                    KeyCode::Left => {
-                        if cursor_x > lines[cursor_y].immutable.len() {
-                            cursor_x -= 1;
-                        }
-                    }
-                    KeyCode::Right => {
-                        if cursor_x < lines[cursor_y].immutable.len() + lines[cursor_y].editable.len() {
-                            cursor_x += 1;
-                        }
-                    }
-                    KeyCode::Esc => {
-                        save_to_file(&lines, "output.yaml")?;
-                        break;
-                    }
-                    _ => {}
-                },
-                _ => {}
-            }
-        }
-    }
-
-    disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
-    terminal.show_cursor()?;
-
-    
-
-
-
-    
     // Argument parser
     let args = ToolArgument::parse();
+    
+    
+    let fru_editor: FRUEditor = FRUEditor::new("FRU editor".to_string());
+    if args.user_interface_mode {
+        fru_editor.run()?;
+    }
+
     
     // Config_path
     let config_path_buf = args.path
@@ -491,29 +251,13 @@ fn main() -> Result<(), io::Error> {
         .expect("Could not convert path to a valid UTF-8 string");
 
 
-    // Build config process
-    if let Some(config_filename) = &args.build_config {
-        build_config_template(config_filename)
-            .unwrap_or_else(|e| panic!("Error: Failed to builld config template, reason: '{}'", e));
-        println!("Build config file '{}' done.", config_filename);
-        return Ok(());
-    }
-
-    // Check file exist, if not exist, build a new one.
-    if !config_path_buf.exists() {
-        eprintln!("Warning: default config file: {} could not be found, Creating default config file.", config_path);
-        build_config_template("fru_gen.toml")
-            .unwrap_or_else(|e| panic!("Error: Failed to builld config template, reason: '{}'", e));
-        println!("Build config file 'fru_gen.toml' done.");
-    }
-
-
     let fru_data = process_fru_data(config_path, args.debug)
         .unwrap_or_else(|e| panic!("Error: Failed to process fru data: {}", e));
 
     // Write data
     write_encoded_data_to_bin_file(&fru_data, &args.file)
         .unwrap_or_else(|e| panic!("Error: Failed to write bin file, {e}"));
+    
     
     println!("Generate fru file: '{}'", &args.file);
     println!("Done");
