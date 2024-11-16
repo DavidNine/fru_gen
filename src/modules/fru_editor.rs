@@ -34,7 +34,7 @@ impl FRUEditor {
 
 pub trait UI {
     fn save_to_file(&self, lines: &[Line], filename: &str) -> io::Result<()>;
-    fn run(&self) -> Result<(), io::Error>;
+    fn run(&self, filename: &str) -> Result<(), io::Error>;
 }
 
 
@@ -48,7 +48,21 @@ impl UI for FRUEditor {
         Ok(())    
     }
 
-    fn run(&self) -> Result<(), io::Error>{
+    /// 
+    /// Display editable user interface.
+    /// 
+    /// # Parameters
+    /// - `filename` (&str) : temp file name.
+    /// 
+    /// # Returns
+    /// - IO ERROR or None
+    ///     
+    /// # Example
+    /// ```
+    /// let fru_editor: FRUEditor = FRUEditor::new("FRU Editor".to_string());
+    /// fru_editor.run()?;
+    /// ```
+    fn run(&self, filename: &str) -> Result<(), io::Error>{
         // 初始化終端
         enable_raw_mode()?;
         let mut stdout = io::stdout();
@@ -216,7 +230,7 @@ impl UI for FRUEditor {
                             }
                         }
                         KeyCode::Esc => {
-                            self.save_to_file(&lines, "output.yaml")?;
+                            self.save_to_file(&lines, filename)?;
                             break;
                         }
                         _ => {}
