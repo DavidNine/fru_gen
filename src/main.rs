@@ -40,8 +40,6 @@ use std::{
 
 
 
-
-
 #[derive(Parser, Debug)]
 #[command(
     author  = "Guanyan.Wang", 
@@ -61,19 +59,22 @@ For more information, please contact: ninebro1211@gmail.com
 #[command(help_template = "
 {about-with-newline}
 
-USAGE:
+Usage:
     {usage}
 
-OPTIONS:
 {all-args}
 
-EXAMPLE:
-    * To generate a fru file by default.
-        fru_gen
+Example:
+    * To generate a FRU file by default.
+        $ fru_gen
     
-    * To generate a fru file called 'test.bin' with cofig named 'cs_fru.toml'.
-        fru_gen -o test.bin -r cs_fru.toml
-        fru_gen --output-file test.bin --read-config cs_fru.toml
+    * To generate a FRU file called 'test.bin' with cofig named 'cs_fru.toml'.
+        $ fru_gen -o test.bin -r cs_fru.toml
+        $ fru_gen --output-file test.bin --read-config cs_fru.toml
+
+    * To generate a FRU file with editor.
+        $ fru_gen --ui
+        $ fru_gen --ui -o test.bin
 ")]
 struct ToolArgument {
 
@@ -93,7 +94,6 @@ struct ToolArgument {
     #[arg(short = 'd', long = "debug")]
     debug: bool,
 
-
     #[doc = r"Generate FRU binary file by using TUI mode"]
     #[arg(short = 'u', long = "ui")]
     user_interface_mode: bool
@@ -101,11 +101,8 @@ struct ToolArgument {
 
 pub
 fn process_fru_data(config_path: &str, debug: bool) -> Result<Vec<u8>> {
-    
-    
     let mut fru_data = Vec::new();
     let fru_size = 256;
-
 
     // Common Header
     fru_data.push(0x01);        // FRU format version
@@ -218,7 +215,7 @@ fn process_fru_data(config_path: &str, debug: bool) -> Result<Vec<u8>> {
 }
 
 
-pub
+///
 fn write_encoded_data_to_bin_file(binary_data: &Vec<u8>, file: &str) -> io::Result<()>{
     let mut file = std::fs::File::create(file)?;
     file.write_all(&binary_data)?;
@@ -228,11 +225,12 @@ fn write_encoded_data_to_bin_file(binary_data: &Vec<u8>, file: &str) -> io::Resu
 
 fn dispatch_function(args: &ToolArgument) -> Result<(), io::Error> {
     if args.user_interface_mode {
-        let fru_editor: FRUEditor = FRUEditor::new("FRU Editor".to_string());
-        fru_editor.run()?;
         
+        let fru_editor: FRUEditor = FRUEditor::new("FRU Editor".to_string());
         let temp_file = NamedTempFile::new()?; // Keeps the temporary file alive
         let temp_file_name = temp_file.path().to_str().unwrap_or("temp.yaml"); // Get the path as a string
+        
+        fru_editor.run(temp_file_name)?;
         let fru_data: Vec<u8> = process_fru_data(&temp_file_name, args.debug)
             .unwrap_or_else(|e| panic!("Error: Failed to process fru data: {}", e));
 
@@ -240,35 +238,22 @@ fn dispatch_function(args: &ToolArgument) -> Result<(), io::Error> {
         write_encoded_data_to_bin_file(&fru_data, &args.file)
             .unwrap_or_else(|e| panic!("Error: Failed to write bin file, {e}"));
 
-    } else if args.build_config {
-         // Config_path
-         let config_path_buf = args.path.clone()
-         .unwrap_or_else(|| {
-             PathBuf::from("output.yaml")
-         });
- 
-        build_config_template(config_path_buf);
-    }
-    else {
+    } else if let Some(config_filename) = &args.build_config {
+        build_config_template(config_filename).unwrap_or_else(|e| panic!("Error: Failed to builld config template, reason: '{}'", e));
+        println!("Build config file '{}' done.", config_filename);
+        return Ok(());
+    } else {
         // Config_path
-        let config_path_buf = args.path.clone()
-        .unwrap_or_else(|| {
-            PathBuf::from("output.yaml")
-        });
-
-        let config_path = config_path_buf
-            .as_path()
-            .to_str()
-            .expect("Could not convert path to a valid UTF-8 string");
-
-        let fru_data: Vec<u8> = process_fru_data(config_path, args.debug)
-            .unwrap_or_else(|e| panic!("Error: Failed to process fru data: {}", e));
+        let config_path_buf = args.path.clone().unwrap_or_else(|| PathBuf::from("output.yaml"));
+        let config_path = config_path_buf.as_path().to_str().unwrap_or_else(|| panic!("Could not convert path to a valid UTF-8 string"));
+        let fru_data: Vec<u8> = process_fru_data(config_path, args.debug).unwrap_or_else(|e| panic!("Error: Failed to process fru data: {}", e));
 
         // Write data
-        write_encoded_data_to_bin_file(&fru_data, &args.file)
-            .unwrap_or_else(|e| panic!("Error: Failed to write bin file, {e}"));
+        write_encoded_data_to_bin_file(&fru_data, &args.file).unwrap_or_else(|e| panic!("Error: Failed to write bin file, {}", e));
     }
 
+    println!("Generate fru file: '{}'", &args.file);
+    println!("Done");
     Ok(())
 }
 
@@ -277,14 +262,7 @@ fn main() -> Result<(), io::Error> {
     
     // Argument parser
     let args: ToolArgument = ToolArgument::parse();
-
     dispatch_function(&args)?;
-
-    
-    println!("Generate fru file: '{}'", &args.file);
-    println!("Done");
     Ok(())
- 
-
 }
 
