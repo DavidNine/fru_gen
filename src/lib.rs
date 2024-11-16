@@ -1,6 +1,6 @@
 pub mod modules;
 use anyhow::Result;
-use std::io::{self, Write};
+use std::io::Write;
 use config::{Config, File, FileFormat};
 use std::collections::HashMap;
 
@@ -8,7 +8,7 @@ use std::collections::HashMap;
 /// Read all data under the specified section from the designated file into a HashMap.
 /// 
 /// # Parameters
-/// - `path`: Path to file.
+/// - `file`: Name of configure file.
 /// 
 /// # Returns
 /// a HashMap with 
@@ -31,6 +31,21 @@ fn read_config_section(file: &str, section: &str) -> Result<HashMap<String, Stri
     }
 }
 
+
+
+///
+/// Transfer yaml file into a HashMap.
+/// 
+/// # Parameters
+/// - `file`: Name of configure file.
+/// 
+/// # Returns
+/// `HashMap`
+/// 
+/// # Example
+/// ```
+/// let config_map = load_yaml(file)?;
+/// ```
 pub fn load_yaml(file: &str) -> Result<HashMap<String, String>, config::ConfigError> {
     // Read the whole file as a HashMap with `Option<String>` values
     let settings = Config::builder()
@@ -49,12 +64,7 @@ pub fn load_yaml(file: &str) -> Result<HashMap<String, String>, config::ConfigEr
     Ok(result)
 }
 
-pub
-fn write_encoded_data_to_bin_file(binary_data: &Vec<u8>, file: &str) -> io::Result<()>{
-    let mut file = std::fs::File::create(file)?;
-    file.write_all(&binary_data)?;
-    Ok(())
-}
+
 
 
 pub fn build_config_template(filename: &str) -> Result<()>{
