@@ -43,6 +43,17 @@ A .Yaml file will be created.
 
 Program will load this file and create corresponding binary FRU file.
 
+# Installation
+
+Please install Rust before installing this utility. (Here use WSL2 environment)
+```Bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+clone this repository and run !
+```Bash
+cargo build
+```
 
 ## License
 
