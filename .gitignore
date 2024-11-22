@@ -1,1 +1,7 @@
 /target
+/fru_gen.drawio
+/.gitignore
+/.vscode/settings.json
+/fru_gen
+/fru_gen.bin
+/fru_gen.toml

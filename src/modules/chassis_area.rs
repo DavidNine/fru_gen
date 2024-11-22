@@ -21,6 +21,12 @@ impl Chassis {
             chassis_extra,
         }
     }
+    pub fn print_all(&self) {
+        println!("Chassis Part Number   = {}",  &self.chassis_part_number);
+        println!("Chassis Serial Number = {}",  &self.chassis_serial_number);
+        println!("Chassis Extra         = {}",  &self.chassis_serial_number);
+    }
+
 }
 
 impl Area for Chassis {
@@ -35,7 +41,7 @@ impl Area for Chassis {
     fn validate(&self) {
         self.check_area_length("Chassis Part Number" ,&self.chassis_part_number);
         self.check_area_length("Chassis Serial Number" ,&self.chassis_serial_number);
-        self.check_area_length("Chassis Extra" ,&self.chassis_serial_number);
+        self.check_area_length("Chassis Extra" ,&self.chassis_extra);
     }
 
     fn transfer_as_byte(&self) -> Vec<u8> {
