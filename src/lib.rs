@@ -93,3 +93,12 @@ Product_Extra = "Product extra"
     Ok(())
 }
 
+
+
+pub fn parser_hex_string(hex_str: &str) -> Result<u8, std::num::ParseIntError> {
+    if hex_str.starts_with("0x") {
+        u8::from_str_radix(&hex_str[2..], 16)
+    } else {
+        u8::from_str_radix(&hex_str, 16)
+    }
+}
