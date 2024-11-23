@@ -2,36 +2,36 @@
 
 This is a simple tool written in Rust that generates a FRU (Field Replaceable Unit) file compatible with `ipmitool`. The tool automatically builds the Common Header, Chassis Info Area, Board Info Area, and Product Info Area of the FRU file, ensuring each area’s checksum is correctly calculated.
 
-## v0.12 Update Information
-- Version   : v0.12 beta
+## v0.14 Update Information
+- Version   : v0.14-alpha
 - Author    : Guanyan Wang
-- Date      : November 14, 2024
+- Date      : November 23, 2024
 
-1. Make this utility into CUI, Write data in the interface and build binary file after leave.
+## Update Detail 
 
-# Installation
+1. Update UI style and provide a more comprehensive interface.
+2. Change chassis type access method.
 
-Install `Rust` before installing this utility. (Here use WSL2 environment)
+## Use fru_gen utility
+
+1. Install `Rust` before installing this utility. (Use Linux for example)
 
 ```Bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-clone from repository and start to generate !
+2. After installation of `Rust`, clone repository.
 
 ```Bash
 git clone git@github.com:DavidNine/fru_gen.git
-cargo run
 ```
-
-# How to use this tool
-
-Run below command while in same directory with `Cargo.toml` file.
+3. Build fru_gen utility.
 
 ```Bash
-cargo run
+cargo build --release
 ```
-# Running example
+
+## Running example
 
 Type the data want to be written and press `ESC` to leave.
 
@@ -42,18 +42,6 @@ A .Yaml file will be created.
 ![Yaml file](/images/output_yaml_file.png)
 
 Program will load this file and create corresponding binary FRU file.
-
-# Installation
-
-Please install Rust before installing this utility. (Here use WSL2 environment)
-```Bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-clone this repository and run !
-```Bash
-cargo build
-```
 
 ## License
 
