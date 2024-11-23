@@ -32,31 +32,25 @@ use modules::board_area::Board;
 use modules::product_area::Product;
 use modules::fru_editor::FRUEditor;
 use tempfile::NamedTempFile;
-
 use std::{
     io::Write, 
     path::PathBuf
 };
 
 
-
-#[derive(Parser, Debug)]
-#[command(
-    author  = "Guanyan.Wang", 
-    version = 
-
-"utility v0.12
+/**************************************
+ *        Message definitions
+ **************************************/
+const ABOUT: &str = "A utility to generate FRU files compatible with IPMI tool usage.";
+const AUTHOR: &str = "Guanyan Wang";
+const VERSION: &str = "utility v0.14
 Copyright (C) 2024 Guanyan Wang
     
 A utility to generate FRU files compatible with IPMI tool usage.
 
-For more information, please contact: ninebro1211@gmail.com
-",
+For more information, please contact: ninebro1211@gmail.com";
 
-    about = "A utility to generate FRU files compatible with IPMI tool usage."
-)]
-
-#[command(help_template = "
+const HELP_MESSAGE: &str = "
 {about-with-newline}
 
 Usage:
@@ -75,7 +69,17 @@ Example:
     * To generate a FRU file with editor.
         $ fru_gen --ui
         $ fru_gen --ui -o test.bin
-")]
+";
+
+
+
+#[derive(Parser, Debug)]
+#[command(
+    about         = ABOUT,
+    author        = AUTHOR, 
+    version       = VERSION,
+    help_template = HELP_MESSAGE,
+)]
 struct ToolArgument {
 
     #[doc = r"Specify output file name (default = 'fru_gen.bin')"]
@@ -118,8 +122,16 @@ fn process_fru_data(config_path: &str, debug: bool) -> Result<Vec<u8>> {
     let config_map = load_yaml(config_path)?;
     let internal = Internal::new("".to_string());
 
+    let binding = "0x02".to_string();
+    let chassis_type_string = config_map.get("chassis_type").unwrap_or(&binding);
+    let chassis_type_code = parser_hex_string(&chassis_type_string).unwrap_or_else(|_| {
+        println!("Warning: parser hex code failed, use default chassis type code: 0x02");
+        0x02
+    });
+
+
     let chassis = Chassis::new(
-        config_map.get("chassis_type").unwrap_or(&"".to_string()).to_string(),
+        chassis_type_code,
         config_map.get("chassis_part_number").unwrap_or(&"".to_string()).to_string(),
         config_map.get("chassis_serial_number").unwrap_or(&"".to_string()).to_string(),
         config_map.get("chassis_extra").unwrap_or(&"".to_string()).to_string(),
