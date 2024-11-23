@@ -1,11 +1,10 @@
 use serde::Deserialize;
-use std::collections::HashMap;
 
 use super::area::Area;
 
 #[derive(Debug, Deserialize)]
 pub struct Chassis {
-    pub chassis_type: String,
+    pub chassis_type: u8,
     pub chassis_part_number: String,
     pub chassis_serial_number:String,
     pub chassis_extra:String,
@@ -13,7 +12,7 @@ pub struct Chassis {
 
 
 impl Chassis {
-    pub fn new(chassis_type: String, chassis_part_number: String, chassis_serial_number: String, chassis_extra:String) -> Self {
+    pub fn new(chassis_type: u8, chassis_part_number: String, chassis_serial_number: String, chassis_extra:String) -> Self {
         Chassis {
             chassis_type,
             chassis_part_number,
@@ -56,8 +55,7 @@ impl Area for Chassis {
         
         
         // Chassis type
-        let chassis_type_code = transfer_chassis_type_str_to_code(&self.chassis_type).unwrap_or(0x02);  // If string not found, default will be Unknow.
-        chassis_area[2] = chassis_type_code;
+        chassis_area[2] = self.chassis_type;
         
         
         // Chassis Part Number
@@ -94,46 +92,4 @@ impl Area for Chassis {
         
         chassis_area    // return chassis data. (Dtype = Vec<u8>)
     }
-}
-
-
-
-
-pub
-fn transfer_chassis_type_str_to_code(chassis_type_str: &str) -> Option<u8>{
-    let chassis_type_map = HashMap::from([
-        ("Other"                , 0x01),
-        ("Unknown"              , 0x02),
-        ("Desktop"              , 0x03),
-        ("Low Profile Desktop"  , 0x04),
-        ("Pizza Box"            , 0x05),
-        ("Mini Tower"           , 0x06),
-        ("Tower"                , 0x07),
-        ("Portable"             , 0x08),
-        ("Laptop"               , 0x09),
-        ("Notebook"             , 0x0A),
-        ("Lunch Box"            , 0x10),
-        ("Main Server Chassis"  , 0x11),
-        ("Expansion Chassis"    , 0x12),
-        ("SubChassis"           , 0x13),
-        ("Bus Expansion Chassis", 0x14),
-        ("Peripheral Chassis"   , 0x15),
-        ("RAID Chassis"         , 0x16),
-        ("Rack Mount Chassis"   , 0x17),
-        ("Sealed-case PC"       , 0x18),
-        ("Multi-system Chassis" , 0x19),
-        ("Compact PCI"          , 0x1A),
-        ("Advanced TCA"         , 0x1B),
-        ("Blade"                , 0x1C),
-        ("Blade Enclosure"      , 0x1D),
-        ("Tablet"               , 0x1E),
-        ("Convertible"          , 0x1F),
-        ("Detachable"           , 0x20),
-        ("IoT Gateway"          , 0x21),
-        ("Embedded PC"          , 0x22),
-        ("Mini PC"              , 0x23),
-        ("Stick PC"             , 0x24),
-    ]);
-
-    chassis_type_map.get(chassis_type_str).copied()
 }
