@@ -58,16 +58,38 @@ pub fn read_config_section(
 /// ```
 pub fn load_config(file: &str) -> Result<HashMap<String, String>, config::ConfigError> {
     let path = std::path::Path::new(file);
-    let format = match path.extension().and_then(|s| s.to_str()) {
-        Some(ext) if ext.eq_ignore_ascii_case("toml") => FileFormat::Toml,
-        Some(ext) if ext.eq_ignore_ascii_case("yaml") || ext.eq_ignore_ascii_case("yml") => FileFormat::Yaml,
-        _ => FileFormat::Yaml,
+    let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
+
+    // 1. Try with the detected format first
+    let primary_format = match ext.as_str() {
+        "toml" => Some(FileFormat::Toml),
+        "yaml" | "yml" => Some(FileFormat::Yaml),
+        _ => None,
     };
 
-    let builder = Config::builder().add_source(File::new(file, format));
+    if let Some(fmt) = primary_format {
+        if let Ok(map) = try_load_with_format(file, fmt) {
+            return Ok(map);
+        }
+    }
+
+    // 2. Fallback: Try TOML then YAML if extension was unknown or primary failed
+    if let Ok(map) = try_load_with_format(file, FileFormat::Toml) {
+        return Ok(map);
+    }
+    
+    if let Ok(map) = try_load_with_format(file, FileFormat::Yaml) {
+        return Ok(map);
+    }
+
+    // 3. Final attempt with default (Yaml) to return the actual error if it still fails
+    try_load_with_format(file, FileFormat::Yaml)
+}
+
+fn try_load_with_format(file: &str, format: FileFormat) -> Result<HashMap<String, String>, config::ConfigError> {
+    let builder = Config::builder().add_source(config::File::new(file, format));
     let settings = builder.build()?;
 
-    // Try to deserialize directly into HashMap<String, String> first
     if let Ok(config_map) = settings.clone().try_deserialize::<HashMap<String, String>>() {
         return Ok(config_map
             .into_iter()
@@ -75,8 +97,6 @@ pub fn load_config(file: &str) -> Result<HashMap<String, String>, config::Config
             .collect());
     }
 
-    // Fallback for cases where values might be null/missing in YAML or complex types in TOML
-    // We try to get all values as a Map of Values and then convert them to strings
     let config_map: HashMap<String, config::Value> = settings.try_deserialize()?;
     Ok(config_map
         .into_iter()

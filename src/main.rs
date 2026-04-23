@@ -87,7 +87,7 @@ struct ToolArgument {
     #[arg(short = 'o', long = "output-file", default_value = "fru_gen.bin")]
     file: String,
 
-    #[doc = r"Specify config file path (YAML/TOML) to load data from"]
+    #[doc = r"Specify config file path (automatically detects TOML/YAML format)"]
     #[arg(short = 'r', long = "read-config")]
     path: Option<std::path::PathBuf>,
     
