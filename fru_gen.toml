@@ -1,33 +1,18 @@
 
-[common]
-file_size = 256
-
-internal_area = "Enabled"
-chassis_area = "Enabled"
-board_area = "Enabled"
-product_area = "Enabled"
-
-
-[chassis]
-type = "Rack Mount Chassis"
-part_number = "CHS1234"
-serial_number = "SN5678"
-extra = "Chassis extra"
-
-[board]
-manufacturer = "qwfqwfg"
-product_name = "Board124"
-serial_number = "SN12345"
-part_number = "BP9876"
-fru_file_id = "FRU123"
-extra = "Board extra"
-
-[product]
-manufacturer = "ProductMFC"
-product_name = "Product1"
-part_number = "PN5678"
-version = "V1.0.0"
-serial_number = "SN123456"
-asset_tag = "AssetTag"
-extra = "Product extra"
-
+Chassis_type = "Rack Mount Chassis"
+Chassis_Part_Number = "CHS1234"
+Chassis_Serial_Number = "SN5678"
+Chassis_Extra = "Chassis extra"
+Board_Manufacturer = "qwfqwfg"
+Board_Product_Name = "Board124"
+Board_Serial_Number = "SN12345"
+Board_Part_Number = "BP9876"
+Board_Fruid = "FRU123"
+Board_Extra = "Board extra"
+Product_Manufacturer = "ProductMFC"
+Product_Name = "Product1"
+Product_Part_Number = "PN5678"
+Product_Version = "V1.0.0"
+Product_Serial_Number = "SN123456"
+Product_Asset_Tag = "AssetTag"
+Product_Extra = "Product extra"

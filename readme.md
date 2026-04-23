@@ -2,15 +2,20 @@
 
 This is a simple tool written in Rust that generates a FRU (Field Replaceable Unit) file compatible with `ipmitool`. The tool automatically builds the Common Header, Chassis Info Area, Board Info Area, and Product Info Area of the FRU file, ensuring each area’s checksum is correctly calculated.
 
-## v0.14 Update Information
-- Version   : v0.14-alpha
+## v1.0.0 Formal Release Update
+- Version   : v1.0.0
 - Author    : Guanyan Wang
-- Date      : November 23, 2024
+- Date      : April 23, 2026
 
-## Update Detail 
+## Major Enhancements in v1.0.0
 
-1. Update UI style and provide a more comprehensive interface.
-2. Change chassis type access method.
+1. **Modernized TUI**: Improved visual style with rounded borders, color-coded sections, and native terminal background support.
+2. **Multi-Page Editor**: Added a **Settings** page (switch with `Tab`) to enable/disable fields and customize reserved space for each column.
+3. **Dynamic Hex View**: Real-time binary preview in `hexdump -C` format that updates instantly as you edit data or settings.
+4. **Enhanced Board/Product Areas**: Added support for Board MFG Date/Time (including timestamp string parsing) and Product FRU ID to ensure full IPMI FRU specification compliance.
+5. **Robust Config Loading**: Unified configuration loader that automatically detects and supports both TOML and YAML formats.
+6. **Improved Controls**: Implemented standard `Ctrl+S` to save and `Esc` to exit without saving, plus mouse wheel support for the Hex View.
+7. **Strict Spec Compliance**: Enhanced checksum calculations and 8-byte alignment padding across all areas.
 
 ## Use fru_gen utility
 
