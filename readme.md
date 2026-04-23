@@ -17,6 +17,16 @@ This is a simple tool written in Rust that generates a FRU (Field Replaceable Un
 6. **Improved Controls**: Implemented standard `Ctrl+S` to save and `Esc` to exit without saving, plus mouse wheel support for the Hex View.
 7. **Strict Spec Compliance**: Enhanced checksum calculations and 8-byte alignment padding across all areas.
 
+## Visual Demo
+
+### Interactive TUI Editor
+The tool features a modern, multi-page terminal interface. You can edit fields in real-time and see the binary layout update instantly in the Hex View.
+![FRU Editor](images/FRU_Gen_editor.png)
+
+### Configuration Output
+Settings can be saved to and loaded from human-readable YAML or TOML files.
+![YAML Output](images/output_yaml_file.png)
+
 ## Use fru_gen utility
 
 1. Install `Rust` before installing this utility. (Use Linux for example)
