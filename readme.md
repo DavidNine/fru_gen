@@ -36,18 +36,6 @@ git clone git@github.com:DavidNine/fru_gen.git
 cargo build --release
 ```
 
-## Running example
-
-Type the data want to be written and press `ESC` to leave.
-
-![fru_gen utility](/images/FRU_Gen_editor.png)
-
-A .Yaml file will be created.
-
-![Yaml file](/images/output_yaml_file.png)
-
-Program will load this file and create corresponding binary FRU file.
-
 ## License
 
 This project is licensed under the MIT License. You are free to use, modify, and distribute this software; however, attribution to the original author is required. See the [LICENSE](LICENSE) file for details.
