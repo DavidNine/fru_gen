@@ -46,6 +46,15 @@ git clone git@github.com:DavidNine/fru_gen.git
 cargo build --release
 ```
 
+### Build Static Binary (Recommended for compatibility)
+If you encounter `GLIBC` version errors on older Linux systems, build a fully static binary using the `musl` target:
+
+```Bash
+rustup target add x86_64-unknown-linux-musl
+cargo build --release --target x86_64-unknown-linux-musl
+```
+The static binary will be at `target/x86_64-unknown-linux-musl/release/fru_gen`.
+
 ## License
 
 This project is licensed under the MIT License. You are free to use, modify, and distribute this software; however, attribution to the original author is required. See the [LICENSE](LICENSE) file for details.
