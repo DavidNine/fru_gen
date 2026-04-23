@@ -57,6 +57,19 @@ TUI CONTROLS:
     e            Toggle Enable/Disable field (Settings page)
     +/-          Adjust Reserved Bytes for field (Settings page)
 
+EXAMPLES:
+    1. Launch TUI to create/edit FRU data:
+       fru_gen -u
+
+    2. Load existing config and launch TUI:
+       fru_gen -u -r test.toml
+
+    3. Generate FRU binary from config with custom size:
+       fru_gen -r test.yaml -o output.bin --size 4096
+
+    4. Generate a default config template:
+       fru_gen -b my_config.toml
+
 {after-help}
 ";
 
@@ -90,8 +103,8 @@ struct ToolArgument {
     #[arg(short = 'u', long = "ui")]
     user_interface_mode: bool,
 
-    #[doc = r"Total size of the output FRU binary in bytes (default = 256)"]
-    #[arg(short = 's', long = "size", default_value = "256")]
+    #[doc = r"Total size of the output FRU binary in bytes (default = 4096)"]
+    #[arg(short = 's', long = "size", default_value = "4096")]
     size: usize
 }
 
