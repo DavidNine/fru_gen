@@ -127,36 +127,36 @@ fn process_fru_data(config_path: &str, size: usize, debug: bool, ui_settings: Op
     let config_map = load_yaml(config_path)?;
     let internal = Internal::new("".to_string());
 
-    let chassis_type_string = config_map.get("chassis_type").cloned().unwrap_or_else(|| "0x02".to_string());
+    let chassis_type_string = config_map.get("chassis_type").map(|f| f.value()).unwrap_or_else(|| "0x02".to_string());
     let chassis_type_code = parse_chassis_type(&chassis_type_string);
 
 
     let chassis = Chassis::new(
         chassis_type_code,
-        config_map.get("chassis_part_number").cloned().unwrap_or_default(),
-        config_map.get("chassis_serial_number").cloned().unwrap_or_default(),
-        config_map.get("chassis_extra").cloned().unwrap_or_default(),
+        config_map.get("chassis_part_number").map(|f| f.value()).unwrap_or_default(),
+        config_map.get("chassis_serial_number").map(|f| f.value()).unwrap_or_default(),
+        config_map.get("chassis_extra").map(|f| f.value()).unwrap_or_default(),
     );
 
     let board = Board::new(
-        config_map.get("board_mfg_date_time").cloned().unwrap_or_else(|| "0".to_string()),
-        config_map.get("board_manufacturer").cloned().unwrap_or_default(),
-        config_map.get("board_product_name").cloned().unwrap_or_default(),
-        config_map.get("board_serial_number").cloned().unwrap_or_default(),
-        config_map.get("board_part_number").cloned().unwrap_or_default(),
-        config_map.get("board_fruid").cloned().unwrap_or_default(),
-        config_map.get("board_extra").cloned().unwrap_or_default(),
+        config_map.get("board_mfg_date_time").map(|f| f.value()).unwrap_or_else(|| "0".to_string()),
+        config_map.get("board_manufacturer").map(|f| f.value()).unwrap_or_default(),
+        config_map.get("board_product_name").map(|f| f.value()).unwrap_or_default(),
+        config_map.get("board_serial_number").map(|f| f.value()).unwrap_or_default(),
+        config_map.get("board_part_number").map(|f| f.value()).unwrap_or_default(),
+        config_map.get("board_fruid").map(|f| f.value()).unwrap_or_default(),
+        config_map.get("board_extra").map(|f| f.value()).unwrap_or_default(),
     );
     
     let product = Product::new(
-        config_map.get("product_manufacturer").cloned().unwrap_or_default(),
-        config_map.get("product_name").cloned().unwrap_or_default(),
-        config_map.get("product_part_number").cloned().unwrap_or_default(),
-        config_map.get("product_version").cloned().unwrap_or_default(),
-        config_map.get("product_serial_number").cloned().unwrap_or_default(),
-        config_map.get("product_asset_tag").cloned().unwrap_or_default(),
-        config_map.get("product_fruid").cloned().unwrap_or_default(),
-        config_map.get("product_extra").cloned().unwrap_or_default(),
+        config_map.get("product_manufacturer").map(|f| f.value()).unwrap_or_default(),
+        config_map.get("product_name").map(|f| f.value()).unwrap_or_default(),
+        config_map.get("product_part_number").map(|f| f.value()).unwrap_or_default(),
+        config_map.get("product_version").map(|f| f.value()).unwrap_or_default(),
+        config_map.get("product_serial_number").map(|f| f.value()).unwrap_or_default(),
+        config_map.get("product_asset_tag").map(|f| f.value()).unwrap_or_default(),
+        config_map.get("product_fruid").map(|f| f.value()).unwrap_or_default(),
+        config_map.get("product_extra").map(|f| f.value()).unwrap_or_default(),
     );
     
     let get_configs = |range: std::ops::Range<usize>| -> Vec<FieldConfig> {
@@ -166,35 +166,29 @@ fn process_fru_data(config_path: &str, size: usize, debug: bool, ui_settings: Op
                 reserved_bytes: l.reserved_bytes(),
             }).collect()
         } else {
-            // Default configs matching transfer_as_byte() defaults
-            match range.start {
-                0 => vec![ // Chassis (0..4)
-                    FieldConfig { enabled: true, reserved_bytes: 0 }, // Type
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                ],
-                4 => vec![ // Board (4..11)
-                    FieldConfig { enabled: true, reserved_bytes: 0 }, // Mfg Time
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                ],
-                11 => vec![ // Product (11..19)
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                    FieldConfig { enabled: true, reserved_bytes: 32 },
-                ],
-                _ => vec![]
-            }
+            let fields = vec![
+                "chassis_type", "chassis_part_number", "chassis_serial_number", "chassis_extra",
+                "board_mfg_date_time", "board_manufacturer", "board_product_name", "board_serial_number", "board_part_number", "board_fruid", "board_extra",
+                "product_manufacturer", "product_name", "product_part_number", "product_version", "product_serial_number", "product_asset_tag", "product_fruid", "product_extra"
+            ];
+            
+            range.map(|i| {
+                let key = fields[i];
+                let is_code = key.contains("type") || key.contains("mfg");
+                let default_reserve = if is_code { 0 } else { 32 };
+                
+                if let Some(field) = config_map.get(key) {
+                    FieldConfig {
+                        enabled: true,
+                        reserved_bytes: field.reserve_bytes().unwrap_or(default_reserve),
+                    }
+                } else {
+                    FieldConfig {
+                        enabled: false,
+                        reserved_bytes: default_reserve,
+                    }
+                }
+            }).collect()
         }
     };
     

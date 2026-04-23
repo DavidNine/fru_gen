@@ -1,8 +1,35 @@
 pub mod modules;
 use anyhow::Result;
 use config::{Config, File, FileFormat};
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::io::Write;
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+pub enum ConfigField {
+    Simple(String),
+    Detailed {
+        value: String,
+        reserve_bytes: Option<usize>,
+    },
+}
+
+impl ConfigField {
+    pub fn value(&self) -> String {
+        match self {
+            ConfigField::Simple(s) => s.clone(),
+            ConfigField::Detailed { value, .. } => value.clone(),
+        }
+    }
+
+    pub fn reserve_bytes(&self) -> Option<usize> {
+        match self {
+            ConfigField::Simple(_) => None,
+            ConfigField::Detailed { reserve_bytes, .. } => *reserve_bytes,
+        }
+    }
+}
 
 ///
 /// Read all data under the specified section from the designated file into a HashMap.
@@ -26,10 +53,10 @@ use std::io::Write;
 pub fn read_config_section(
     file: &str,
     section: &str,
-) -> Result<HashMap<String, String>, config::ConfigError> {
+) -> Result<HashMap<String, ConfigField>, config::ConfigError> {
     let builder = Config::builder().add_source(File::new(file, FileFormat::Toml));
     let settings = builder.build()?;
-    if let Some(section_values) = settings.get::<HashMap<String, String>>(section).ok() {
+    if let Some(section_values) = settings.get::<HashMap<String, ConfigField>>(section).ok() {
         Ok(section_values)
     } else {
         Err(config::ConfigError::NotFound(format!(
@@ -56,7 +83,7 @@ pub fn read_config_section(
 /// let config_map = load_yaml(file)?;
 /// # Ok::<(), config::ConfigError>(())
 /// ```
-pub fn load_config(file: &str) -> Result<HashMap<String, String>, config::ConfigError> {
+pub fn load_config(file: &str) -> Result<HashMap<String, ConfigField>, config::ConfigError> {
     let path = std::path::Path::new(file);
     let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
 
@@ -86,25 +113,18 @@ pub fn load_config(file: &str) -> Result<HashMap<String, String>, config::Config
     try_load_with_format(file, FileFormat::Yaml)
 }
 
-fn try_load_with_format(file: &str, format: FileFormat) -> Result<HashMap<String, String>, config::ConfigError> {
+fn try_load_with_format(file: &str, format: FileFormat) -> Result<HashMap<String, ConfigField>, config::ConfigError> {
     let builder = Config::builder().add_source(config::File::new(file, format));
     let settings = builder.build()?;
 
-    if let Ok(config_map) = settings.clone().try_deserialize::<HashMap<String, String>>() {
-        return Ok(config_map
-            .into_iter()
-            .map(|(k, v)| (k.to_lowercase(), v))
-            .collect());
-    }
-
-    let config_map: HashMap<String, config::Value> = settings.try_deserialize()?;
+    let config_map: HashMap<String, ConfigField> = settings.try_deserialize()?;
     Ok(config_map
         .into_iter()
-        .map(|(k, v)| (k.to_lowercase(), v.to_string()))
+        .map(|(k, v)| (k.to_lowercase(), v))
         .collect())
 }
 
-pub fn load_yaml(file: &str) -> Result<HashMap<String, String>, config::ConfigError> {
+pub fn load_yaml(file: &str) -> Result<HashMap<String, ConfigField>, config::ConfigError> {
     load_config(file)
 }
 
