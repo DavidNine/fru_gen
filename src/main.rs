@@ -45,7 +45,19 @@ const HELP_MESSAGE: &str = "\
 USAGE:
     {usage}
 
-{all-args}{after-help}
+{all-args}
+
+TUI CONTROLS:
+    Tab          Switch between [Editor] and [Settings] pages
+    Ctrl+S       Save configuration to binary
+    Esc          Exit the application
+    ↑/↓          Navigate between fields
+    ←/→          Move cursor within a field (Editor page)
+    PageUp/Down  Scroll Hint/Hex View panels
+    e            Toggle Enable/Disable field (Settings page)
+    +/-          Adjust Reserved Bytes for field (Settings page)
+
+{after-help}
 ";
 
 
@@ -58,27 +70,27 @@ USAGE:
 )]
 struct ToolArgument {
 
-    #[doc = r"Specify output file name (default = 'fru_gen.bin')"]
+    #[doc = r"Specify output binary file name (default = 'fru_gen.bin')"]
     #[arg(short = 'o', long = "output-file", default_value = "fru_gen.bin")]
     file: String,
 
-    #[doc = r"Specify config file path for generate custome FRU file"]
+    #[doc = r"Specify config file path (YAML/TOML) to load data from"]
     #[arg(short = 'r', long = "read-config")]
     path: Option<std::path::PathBuf>,
     
-    #[doc = r"Generate a default config template (default = 'fru_gen.toml')"]
+    #[doc = r"Generate a default configuration template (e.g., 'fru_gen.toml')"]
     #[arg(short = 'b', long = "build-config")]
     build_config: Option<String>,
 
-    #[doc = r"Enable debug mode"]
+    #[doc = r"Enable verbose debug output"]
     #[arg(short = 'd', long = "debug")]
     debug: bool,
 
-    #[doc = r"Generate FRU binary file by using TUI mode"]
+    #[doc = r"Launch the interactive TUI mode (supports live hex preview)"]
     #[arg(short = 'u', long = "ui")]
     user_interface_mode: bool,
 
-    #[doc = r"Specify output FRU file size (default = 256)"]
+    #[doc = r"Total size of the output FRU binary in bytes (default = 256)"]
     #[arg(short = 's', long = "size", default_value = "256")]
     size: usize
 }
