@@ -1,5 +1,5 @@
 use super::{area::Area, board_area::{Board, parse_mfg_time}, chassis_area::Chassis, product_area::Product};
-use crate::{parse_chassis_type, CHASSIS_TYPE_TABLE};
+use crate::{parse_chassis_type, CHASSIS_TYPE_TABLE, ConfigField};
 use chrono::{Duration, TimeZone, Utc};
 use crossterm::{
     event::{self, EnableMouseCapture, DisableMouseCapture, Event, KeyCode, KeyModifiers, MouseEventKind},
@@ -21,7 +21,7 @@ use tui::{
     Terminal,
 };
 
-const VERSION: &str = "fru_gen utility v1.0.0
+const VERSION: &str = "fru_gen utility v1.0.2
 
 Copyright (C) 2026 Guanyan Wang
     
@@ -431,7 +431,7 @@ impl FRUEditor {
 
 pub trait UI {
     fn save_to_file(&self, lines: &[Line], filename: &str) -> io::Result<()>;
-    fn run(&self, filename: &str, initial_data: Option<HashMap<String, String>>) -> Result<Option<Vec<Line>>, io::Error>;
+    fn run(&self, filename: &str, initial_data: Option<HashMap<String, ConfigField>>) -> Result<Option<Vec<Line>>, io::Error>;
 }
 
 impl UI for FRUEditor {
@@ -444,7 +444,7 @@ impl UI for FRUEditor {
         Ok(())
     }
 
-    fn run(&self, filename: &str, initial_data: Option<HashMap<String, String>>) -> Result<Option<Vec<Line>>, io::Error> {
+    fn run(&self, filename: &str, initial_data: Option<HashMap<String, ConfigField>>) -> Result<Option<Vec<Line>>, io::Error> {
         enable_raw_mode()?;
         let mut stdout: io::Stdout = io::stdout();
         execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -477,20 +477,26 @@ impl UI for FRUEditor {
             .into_iter()
             .map(|immutable_data: &str| {
                 let key = immutable_data.strip_suffix(": ").unwrap_or(immutable_data).to_lowercase();
-                let editable = if let Some(ref data) = initial_data {
-                    data.get(&key).cloned().unwrap_or_default()
-                } else {
-                    String::new()
-                };
                 
                 let is_code = key.contains("type") || key.contains("mfg");
+                let default_reserve = if is_code { 0 } else { 32 };
+
+                let (editable, enabled, reserved_bytes) = if let Some(ref data) = initial_data {
+                    if let Some(field) = data.get(&key) {
+                        (field.value(), true, field.reserve_bytes().unwrap_or(default_reserve))
+                    } else {
+                        (String::new(), false, default_reserve)
+                    }
+                } else {
+                    (String::new(), true, default_reserve)
+                };
                 
                 Line {
                     immutable: immutable_data.to_string(),
                     editable,
                     selected: false,
-                    enabled: true,
-                    reserved_bytes: if is_code { 0 } else { 32 },
+                    enabled,
+                    reserved_bytes,
                 }
             })
             .collect();

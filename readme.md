@@ -2,20 +2,22 @@
 
 This is a simple tool written in Rust that generates a FRU (Field Replaceable Unit) file compatible with `ipmitool`. The tool automatically builds the Common Header, Chassis Info Area, Board Info Area, and Product Info Area of the FRU file, ensuring each area’s checksum is correctly calculated.
 
-## v1.0.1 Formal Release Update
-- Version   : v1.0.1
+## v1.0.2 Formal Release Update
+- Version   : v1.0.2
 - Author    : Guanyan Wang
-- Date      : April 23, 2026
+- Date      : April 24, 2026
 
-## Major Enhancements in v1.0.1
+## Major Enhancements in v1.0.2
 
-1. **Modernized TUI**: Improved visual style with rounded borders, color-coded sections, and native terminal background support.
-2. **Multi-Page Editor**: Added a **Settings** page (switch with `Tab`) to enable/disable fields and customize reserved space for each column.
-3. **Dynamic Hex View**: Real-time binary preview in `hexdump -C` format that updates instantly as you edit data or settings.
-4. **Enhanced Board/Product Areas**: Added support for Board MFG Date/Time (including timestamp string parsing) and Product FRU ID to ensure full IPMI FRU specification compliance.
-5. **Robust Config Loading**: Unified configuration loader that automatically detects and supports both TOML and YAML formats with fallback logic.
-6. **Improved Controls**: Implemented standard `Ctrl+S` to save and `Esc` to exit without saving, plus mouse wheel support for the Hex View.
-7. **Strict Spec Compliance**: Enhanced checksum calculations and 8-byte alignment padding across all areas.
+1. **Comprehensive Testing Suite**: Added a robust set of integration and unit tests covering CLI operations, configuration loading, and FRU data generation logic.
+2. **Improved Reliability**: Verified speculative edge cases and error handling (e.g., buffer size limitations) through automated tests.
+3. **Modernized TUI**: Improved visual style with rounded borders, color-coded sections, and native terminal background support.
+4. **Multi-Page Editor**: Added a **Settings** page (switch with `Tab`) to enable/disable fields and customize reserved space for each column.
+5. **Dynamic Hex View**: Real-time binary preview in `hexdump -C` format that updates instantly as you edit data or settings.
+6. **Enhanced Board/Product Areas**: Added support for Board MFG Date/Time (including timestamp string parsing) and Product FRU ID to ensure full IPMI FRU specification compliance.
+7. **Robust Config Loading**: Unified configuration loader that automatically detects and supports both TOML and YAML formats with fallback logic.
+8. **Improved Controls**: Implemented standard `Ctrl+S` to save and `Esc` to exit without saving, plus mouse wheel support for the Hex View.
+9. **Strict Spec Compliance**: Enhanced checksum calculations and 8-byte alignment padding across all areas.
 
 ## Visual Demo
 
@@ -51,9 +53,24 @@ If you encounter `GLIBC` version errors on older Linux systems, build a fully st
 
 ```Bash
 rustup target add x86_64-unknown-linux-musl
+```Bash
 cargo build --release --target x86_64-unknown-linux-musl
 ```
 The static binary will be at `target/x86_64-unknown-linux-musl/release/fru_gen`.
+
+## Testing
+
+The project includes a comprehensive test suite covering the CLI, utility functions, and FRU area generation.
+
+To run all tests:
+```Bash
+cargo test
+```
+
+Specific test categories can be run individually:
+- `cargo test --test cli_tests` (Integration tests for CLI)
+- `cargo test --test lib_tests` (Library utilities)
+- `cargo test --test modules_tests` (FRU area logic)
 
 ## License
 
