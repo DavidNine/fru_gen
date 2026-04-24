@@ -1,0 +1,4 @@
+chassis_type = "0x02"
+chassis_part_number = { value = "CH-PART-123", reserve_bytes = 64 }
+board_manufacturer = "MyBoardMfg"
+board_product_name = { value = "MyBoardProduct", reserve_bytes = 16 }

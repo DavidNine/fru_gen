@@ -21,7 +21,7 @@ use tui::{
     Terminal,
 };
 
-const VERSION: &str = "fru_gen utility v1.0.0
+const VERSION: &str = "fru_gen utility v1.0.2
 
 Copyright (C) 2026 Guanyan Wang
     

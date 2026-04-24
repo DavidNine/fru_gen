@@ -35,7 +35,7 @@ use fru_gen::modules::{
 use fru_gen::{load_config, load_yaml, build_config_template, parse_chassis_type};
 
 
-const VERSION: &str = "1.0.0";
+const VERSION: &str = "1.0.2";
 
 const HELP_MESSAGE: &str = "\
 {before-help}FRU_Gen {version}
