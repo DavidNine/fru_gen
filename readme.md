@@ -51,9 +51,24 @@ If you encounter `GLIBC` version errors on older Linux systems, build a fully st
 
 ```Bash
 rustup target add x86_64-unknown-linux-musl
+```Bash
 cargo build --release --target x86_64-unknown-linux-musl
 ```
 The static binary will be at `target/x86_64-unknown-linux-musl/release/fru_gen`.
+
+## Testing
+
+The project includes a comprehensive test suite covering the CLI, utility functions, and FRU area generation.
+
+To run all tests:
+```Bash
+cargo test
+```
+
+Specific test categories can be run individually:
+- `cargo test --test cli_tests` (Integration tests for CLI)
+- `cargo test --test lib_tests` (Library utilities)
+- `cargo test --test modules_tests` (FRU area logic)
 
 ## License
 
