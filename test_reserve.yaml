@@ -1,8 +1,0 @@
-chassis_type: "0x02"
-chassis_part_number:
-  value: "CH-PART-YAML"
-  reserve_bytes: 20
-board_manufacturer: "YamlMfg"
-board_product_name:
-  value: "YamlProduct"
-  reserve_bytes: 40
